@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+@theme {
+  /* 공통 색상 ─ MockUp에서 사용한 값 그대로 */
+  --color-navy: #1E3A5F;
+  --color-blue: #3B6EF3;
+  --color-red: #F04452;
+  --color-green: #16A36D;
+  --color-warn: #B4730E;
+  --color-warn-bg: #FFF9EC;
+  --color-warn-line: #F9CE7A;
+  --color-border: #E7EAEE;
+  --color-surface: #F9FAFC;
+  --color-text: #212630;
+  --color-sub: #737D8C;
+
+  /* 폰트 크기 — 이름으로 고정 */
+  --font-size-label: 0.625rem;      /* 10px */
+  --font-size-caption: 0.6875rem;   /* 11px */
+  --font-size-body: 0.75rem;        /* 12px */
+  --font-size-headline: 0.9375rem;  /* 15px */
+  --font-size-title: 1.0625rem;     /* 17px */
+  --font-size-display: 1.875rem;    /* 30px */
+
+  /* 폰트 */
+  --font-sans: "Noto Sans KR", sans-serif;
+}
