@@ -1,3 +1,7 @@
+import { Button } from '@/shared/ui/Button';
+import { Chip } from '@/shared/ui/Chip';
+import { Badge } from '@/shared/ui/Badge';
+
 export default function PreviewPage() {
   return (
     <div className="min-h-screen bg-surface p-10 font-sans">
@@ -9,7 +13,24 @@ export default function PreviewPage() {
       </header>
 
       <Section title="준비 중">
-        <p className="text-body text-sub">아직 컴포넌트가 없습니다.</p>
+        <Button variant="primary">즐겨찾기 저장</Button>
+        <Button variant="secondary">나중에</Button>
+        <Button variant="outline">PDF 저장</Button>
+        <Button variant="primary" disabled>비활성 상태</Button>
+      </Section>
+
+      <Section title="Chip">
+        <Chip>서울시 전체</Chip>
+        <Chip onRemove={() => alert('제거됨')}>성동구 ✕ 가능</Chip>
+        <Chip variant="active">한식음식점</Chip>
+        <Chip variant="warning">업종 미선택</Chip>
+      </Section>
+
+      <Section title="Badge">
+        <Badge variant="info">발달상권</Badge>
+        <Badge variant="warning">DB 확인 중</Badge>
+        <Badge variant="success">우위</Badge>
+        <Badge variant="neutral">D-30</Badge>
       </Section>
     </div>
   );
