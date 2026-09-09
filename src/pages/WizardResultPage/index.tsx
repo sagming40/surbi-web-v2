@@ -96,7 +96,7 @@ export default function WizardResultPage() {
             </div>
           </section>
 
-          <Button className="mt-7 w-full !bg-blue" onClick={() => window.alert('AI 분석 보고서 화면은 다음 작업에서 연결합니다.')}>
+          <Button className="mt-7 w-full !bg-blue" onClick={() => navigate('/report')}>
             AI 분석 보고서 전문 보기
           </Button>
         </div>
