@@ -15,6 +15,7 @@ import { GaugeChart } from '@/shared/ui/charts/GaugeChart';
 import { DonutChart } from '@/shared/ui/charts/DonutChart';
 import { MultiLineChart } from '@/shared/ui/charts/MultiLineChart';
 import { PieChart } from '@/shared/ui/charts/PieChart';
+import { TrdarQuickPreview } from '@/features/map/TrdarQuickPreview';
 
 // 컴포넌트 확인용 샘플 데이터 (preview 전용 ─ 이외의 코드에선 하드코딩 금지)
 const sampleRows = [
@@ -233,6 +234,24 @@ export default function PreviewPage() {
             data={[{ label: '일반점포', value: 691 }, { label: '프랜차이즈', value: 152 }]}
             showLegend
           />
+      </Section>
+
+      <Section title="TrdarQuickPreview">
+        <TrdarQuickPreview
+          trdarName="신당역 3번"
+          trdarTypeCode="A"
+          trdarTypeName="골목상권"
+          onViewDetail={() => alert('상세 분석으로 이동')}
+          onClose={() => alert('닫기')}
+        />
+        <TrdarQuickPreview
+          trdarName="성수동 카페거리"
+          trdarTypeCode="B"
+          trdarTypeName="발달상권"
+          areaM2={129607.345}
+          onViewDetail={() => alert('상세 분석으로 이동')}
+          onClose={() => alert('닫기')}
+        />
       </Section>
     </div>
   );
