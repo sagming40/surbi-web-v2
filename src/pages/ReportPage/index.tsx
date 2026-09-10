@@ -136,7 +136,7 @@ export default function ReportPage() {
           <Button className="w-full" variant="outline" onClick={() => window.print()}>
             보고서 저장하기
           </Button>
-          <Button className="w-full !bg-blue" onClick={() => window.alert('창업 시뮬레이션 화면은 다음 작업에서 연결합니다.')}>
+          <Button className="w-full !bg-blue" onClick={() => navigate('/simulation')}>
             창업 시뮬레이션 보기
           </Button>
         </div>

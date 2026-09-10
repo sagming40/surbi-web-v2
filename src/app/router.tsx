@@ -3,6 +3,7 @@ import PreviewPage from '@/pages/PreviewPage';
 import WizardPage from '@/pages/WizardPage';
 import WizardResultPage from '@/pages/WizardResultPage';
 import ReportPage from '@/pages/ReportPage';
+import SimulationPage from '@/pages/SimulationPage';
 
 export const router = createBrowserRouter([
   {
@@ -20,5 +21,9 @@ export const router = createBrowserRouter([
   {
     path: '/report',
     element: <ReportPage />,
+  },
+  {
+    path: '/simulation',
+    element: <SimulationPage />,
   },
 ]);
