@@ -26,14 +26,14 @@ export function KpiRow({ kpi, changeRate }: KpiRowProps) {
             
         return(
           <div key={key} className="flex flex-col gap-2">
-            <span className="text-headline text-sub">{label}</span>
+            <span className="text-title text-sub">{label}</span>
 
-            <span className="text-[26px] font-bold text-text">
+            <span className="text-display font-bold text-text">
               {value === null ? '-' : format(value)}
             </span>
 
             {rate !== null && (
-              <div className="text-body">
+              <div className="text-headline">
                 <span className={rate >= 0 ? 'text-blue' : 'text-red'}>
                   {rate >= 0 ? '+' : ''}{rate}%
                 </span>

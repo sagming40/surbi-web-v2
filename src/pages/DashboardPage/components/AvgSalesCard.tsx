@@ -39,7 +39,7 @@ export function AvgSalesCard({
       {/* 값 42px 높이, 뱃지는 세로 가운데 정렬 (목업 y=9.5 → 중앙) */}
       <div className="flex items-center gap-4">
         <p className="text-[45px] font-bold text-navy leading-none">
-          {value === null ? '—' : `${(value / 10_000).toLocaleString()}만원`}
+          {value === null ? '—' : `${Math.round(value / 10_000).toLocaleString()}만원`}
         </p>
         <Badge variant={isUp ? 'info' : 'warning'}>
           {isUp ? '▲' : '▼'} {Math.abs(changeRate)}%

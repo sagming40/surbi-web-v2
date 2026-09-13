@@ -22,7 +22,7 @@ export function QuarterlyTrend({ items }: QuarterlyTrendProps) {
         <span className="text-caption text-sub">단위 : 만원</span>
       </div>
 
-      <div className="relative h-[320px]">
+      <div className="relative h-[429px]">
         <div
           className="absolute inset-x-0 bottom-8 flex flex-col justify-between"
           style={{ top: `${HEADROOM * 100}%` }}
@@ -39,10 +39,10 @@ export function QuarterlyTrend({ items }: QuarterlyTrendProps) {
                 <span
                   className={`text-caption mb-1 ${i === last ? 'text-blue font-bold' : 'text-sub'}`}
                 >
-                  {(d.sales / 10_000).toLocaleString()}
+                  {Math.round(d.sales / 10_000).toLocaleString()}
                 </span>
                 <Tooltip
-                  label={`${shortQuarter(d.quarter)} · ${(d.sales / 10_000).toLocaleString()}만원`}
+                  label={`${shortQuarter(d.quarter)} · ${Math.round(d.sales / 10_000).toLocaleString()}만원`}
                   className={`w-[56%] rounded-t-md ${i === last ? 'bg-blue' : 'bg-blue/30'}`}
                   style={{ height: `${(d.sales / axisMax) * 100}%` }}
                 />

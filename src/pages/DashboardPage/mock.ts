@@ -110,3 +110,59 @@ export const dashboardMock: DashboardMock = {
 
 
 
+
+// ─────────────────────────────────────────────
+// 분기 전환용 목업
+// ─────────────────────────────────────────────
+
+/**
+ * 직전분기 목업을 만든다.
+ * 값을 일정 비율로 낮추는 방식 — 분기 셀렉터가 실제로 동작하는지 확인하는 용도라
+ * 숫자의 사실성보다 "바뀐다"는 게 중요하다. API가 붙으면 이 블록은 전부 삭제.
+ */
+function makePrevQuarter(base: DashboardMock, quarter: string, factor: number): DashboardMock {
+  const scale = (v: number) => Math.round(v * factor);
+
+  return {
+    ...base,
+    quarter,
+    kpi: {
+      totalSales: scale(base.kpi.totalSales),
+      totalStores: scale(base.kpi.totalStores),
+      newStores: scale(base.kpi.newStores),
+      closureRate:
+        base.kpi.closureRate === null ? null : Number((base.kpi.closureRate * 1.04).toFixed(1)),
+    },
+    kpiChangeRate: {
+      totalSales: 2.1,
+      totalStores: 0.7,
+      newStores: 1.5,
+      closureRate: 0.6,
+    },
+    avgSalesPerStore: base.avgSalesPerStore === null ? null : scale(base.avgSalesPerStore),
+    avgSalesPerStoreChangeRate: 3.2,
+    // 마지막 분기를 떼어내 한 칸 앞선 구간으로 만든다
+    salesTrend: base.salesTrend.slice(0, -1),
+    districtHeatmap: base.districtHeatmap.map((d) => ({ ...d, sales: scale(d.sales) })),
+    // 2025Q4의 "당분기"가 곧 2026Q1 입장의 "직전분기"라 한 칸씩 밀린다
+    categoryAvgSales: base.categoryAvgSalesPrev,
+    categoryAvgSalesPrev: base.categoryAvgSalesPrev.map((d) => ({
+      ...d,
+      avgSalesPerStore: scale(d.avgSalesPerStore),
+    })),
+    districtTop10: base.districtTop10.map((d) => ({ ...d, sales: scale(d.sales) })),
+  };
+}
+
+const MOCK_BY_QUARTER: Record<string, DashboardMock> = {
+  '2026Q1': dashboardMock,
+  '2025Q4': makePrevQuarter(dashboardMock, '2025Q4', 0.94),
+};
+
+/** 셀렉터에 노출할 분기. 목업이 있는 것만 넣는다 */
+export const MOCK_QUARTERS = ['2026Q1', '2025Q4'];
+
+/** 분기 코드로 목업을 꺼낸다. 없는 분기는 최신 분기로 대체 */
+export function getDashboardMock(quarter: string): DashboardMock {
+  return MOCK_BY_QUARTER[quarter] ?? dashboardMock;
+}

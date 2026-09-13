@@ -1,4 +1,5 @@
-import { dashboardMock } from './mock';
+import { useState } from 'react';
+import { getDashboardMock, MOCK_QUARTERS } from './mock';
 import { SurbiCard } from '@/shared/ui/SurbiCard';
 import { AvgSalesCard } from './components/AvgSalesCard';
 import { DistrictTileGrid } from './components/DistrictTileGrid';
@@ -10,50 +11,61 @@ import { DistrictTop10 } from './components/DistrictTop10';
 
 /**
  * 03 종합 대시보드.
- * 목업 실측(1440 기준): 좌우 여백 28, 컬럼 간격 20. 좌측 컬럼은 목업 400 → 600 (1.5배).
+ *
+ * 좌측 컬럼에 자치구 계열(분포 격자 + TOP 10)을 모으고, 우측은 전체 지표와 업종 비교를 둔다.
+ * 목업은 TOP 10이 우측 하단이지만, 같은 자치구 데이터를 붙여두는 편이 비교하기 좋다는 의견을 반영했다.
+ * 타일 격자는 TOP 10 자리를 내주려고 목업 크기(타일 41px)로 되돌렸다.
+ *
  * 헤더는 화면 끝까지 닿아야 하므로 여백은 바깥이 아니라 본문 grid에만 준다.
  */
 export default function DashboardPage() {
+  // API가 붙으면 이 상태를 그대로 useQuery의 파라미터로 넘긴다
+  const [quarter, setQuarter] = useState(MOCK_QUARTERS[0]);
+  const data = getDashboardMock(quarter);
+
+  // 업종 차트 범례에 쓸 분기 표기
+  const prevQuarter = data.salesTrend[data.salesTrend.length - 2]?.quarter ?? '';
+  const label = (q: string) => (q ? `${q.slice(0, 4)}년 ${q.slice(5)}분기` : '');
+
   return (
     <div className="min-h-screen bg-white font-sans">
-      <TopNav />
+      <TopNav
+        quarters={MOCK_QUARTERS}
+        currentQuarter={quarter}
+        onQuarterChange={setQuarter}
+      />
 
-      <div className="grid grid-cols-[600px_1fr] gap-12 px-12 py-6">
+      <div className="grid grid-cols-[480px_1fr] gap-12 px-10 py-6">
 
-        {/* 좌측 — 두 블록을 카드 하나에 담는다 (목업은 분리형이지만 합치기로 결정) */}
-        <SurbiCard className="px-[33px] py-[30px] flex flex-col gap-10 self-start">
+        {/* 좌측 — 자치구 계열을 카드 하나에 담는다 */}
+        <SurbiCard className="px-[26px] py-6 flex flex-col gap-7 self-start">
           <AvgSalesCard
-            value={dashboardMock.avgSalesPerStore}
-            changeRate={dashboardMock.avgSalesPerStoreChangeRate}
+            value={data.avgSalesPerStore}
+            changeRate={data.avgSalesPerStoreChangeRate}
             dongCount={427}
           />
 
           {/* 카드 안쪽 여백을 상쇄해 선이 카드 끝까지 닿게 한다 */}
-          <div className="h-px bg-border -mx-[33px] -my-2" />
+          <div className="h-px bg-border -mx-[26px] -my-1.5" />
 
-          <DistrictTileGrid items={dashboardMock.districtHeatmap} />
+          <DistrictTileGrid items={data.districtHeatmap} />
+
+          <div className="h-px bg-border -mx-[26px] -my-1.5" />
+
+          <DistrictTop10 items={data.districtTop10} />
         </SurbiCard>
 
-        <main className="flex flex-col gap-10">
-          {/* KPI 4개 · 분기별 추이 · 하단 2열 */}
-          <KpiRow kpi={dashboardMock.kpi} changeRate={dashboardMock.kpiChangeRate} />
+        <main className="flex flex-col gap-20 self-start">
+          <KpiRow kpi={data.kpi} changeRate={data.kpiChangeRate} />
 
-          <QuarterlyTrend items={dashboardMock.salesTrend} />
+          <QuarterlyTrend items={data.salesTrend} />
 
-          
-
-          <div className="grid grid-cols-3 gap-12">
-            <div className="col-span-2">
-              <CategoryCompare
-                current={dashboardMock.categoryAvgSales}
-                previous={dashboardMock.categoryAvgSalesPrev}
-                currentLabel="2026년 1분기"
-                previousLabel="2025년 4분기"
-              />
-            </div>
-            
-            <DistrictTop10 items={dashboardMock.districtTop10} />
-          </div>
+          <CategoryCompare
+            current={data.categoryAvgSales}
+            previous={data.categoryAvgSalesPrev}
+            currentLabel={label(data.quarter)}
+            previousLabel={label(prevQuarter)}
+          />
         </main>
 
       </div>

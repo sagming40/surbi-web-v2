@@ -41,7 +41,7 @@ export function CategoryCompare({
         </div>
       </div>
 
-      <div className="relative h-[420px]">
+      <div className="relative h-[515px]">
         <div 
           className="absolute inset-x-0 bottom-8 flex flex-col justify-between"
           style={{ top: `${HEADROOM * 100}%` }}
@@ -58,12 +58,12 @@ export function CategoryCompare({
               <div key={d.groupCode} className="flex-1 flex flex-col">
                 <div className="flex-1 flex items-end justify-center gap-1.5">
                   <Tooltip
-                    label={`${d.groupName} ${previousLabel} · ${(prev / 10_000).toLocaleString()}만원`}
+                    label={`${d.groupName} ${previousLabel} · ${Math.round(prev / 10_000).toLocaleString()}만원`}
                     className="w-[24%] rounded-t-md bg-blue/40"
                     style={{ height: `${(prev / axisMax) * 100}%` }}
                   />
                   <Tooltip
-                    label={`${d.groupName} ${currentLabel} · ${(d.avgSalesPerStore / 10_000).toLocaleString()}만원`}
+                    label={`${d.groupName} ${currentLabel} · ${Math.round(d.avgSalesPerStore / 10_000).toLocaleString()}만원`}
                     className="w-[24%] rounded-t-md bg-blue"
                     style={{ height: `${(d.avgSalesPerStore / axisMax) * 100}%` }}
                   />
