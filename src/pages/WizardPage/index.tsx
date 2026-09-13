@@ -1,50 +1,73 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import type { CategoryItem, DistrictGeo } from '@/shared/types';
 import { Button } from '@/shared/ui/Button';
-import { Chip } from '@/shared/ui/Chip';
+import { RegionStep } from './RegionStep';
+import { CategoryStep } from './CategoryStep';
+import { StoreSizeStep } from './StoreSizeStep';
+import { FloorStep } from './FloorStep';
+import { StaffStep } from './StaffStep';
+import { ReviewStep } from './ReviewStep';
+import { createWizardResult } from './wizard.api';
+import { createWizardResultRequest, getDistrictDisplayName } from './wizard.presenter';
+import type { WizardFloorOption, WizardStaffOption, WizardStoreSizeOption } from './wizard.types';
 
 type WizardStep = 1 | 2 | 3 | 4 | 5 | 6;
-type StoreSize = 'small' | 'medium' | 'large';
-type StaffRange = 'none' | 'oneToFour' | 'fivePlus';
-
+// 진행률 계산과 다음/이전 이동의 상한값에 함께 쓰는 위저드 전체 단계 수다.
 const stepCount = 6;
-
-const categories = ['한식음식점', '중식음식점', '일식음식점', '양식음식점', '제과점', '패스트푸드점'];
-const scoreFactors = ['유동인구', '직장인구', '주거인구', '경쟁업체수', '임대료'];
-
-const storeSizes: Record<StoreSize, { label: string; detail: string }> = {
-  small: { label: '소형', detail: '54㎡\n(16평)' },
-  medium: { label: '중형', detail: '86㎡\n(26평)' },
-  large: { label: '대형', detail: '119㎡\n(36평)' },
-};
-
-const staffOptions: Record<StaffRange, { label: string; detail: string }> = {
-  none: { label: '고용 없음', detail: '1인 운영' },
-  oneToFour: { label: '1~4명', detail: '' },
-  fivePlus: { label: '5명 이상', detail: '' },
-};
 
 export default function WizardPage() {
   const navigate = useNavigate();
+
+  // 모든 단계가 공유해야 하는 입력값은 이 부모 컴포넌트에서 한 번만 관리한다.
   const [step, setStep] = useState<WizardStep>(1);
   const [regionQuery, setRegionQuery] = useState('성동');
-  const [region, setRegion] = useState('서울시 성동구');
-  const [category, setCategory] = useState('한식음식점');
+  // 문자열 대신 API 원본 객체를 보관해 이후 guCode가 필요한 요청에도 재사용할 수 있다.
+  const [region, setRegion] = useState<DistrictGeo | null>(null);
+  // API 원본 객체를 저장해 결과 생성 요청에 categoryCode를 그대로 보낼 수 있다.
+  const [category, setCategory] = useState<CategoryItem | null>(null);
   const [selectedFactors, setSelectedFactors] = useState(['유동인구', '경쟁업체수']);
-  const [storeSize, setStoreSize] = useState<StoreSize>('medium');
-  const [floor, setFloor] = useState(1);
-  const [staffRange, setStaffRange] = useState<StaffRange>('oneToFour');
+  // 면적·평수·코드를 함께 가진 API 응답 객체를 보관한다.
+  const [storeSize, setStoreSize] = useState<WizardStoreSizeOption | null>(null);
+  // 4·5단계도 API의 원본 선택 객체를 보관해 결과 요청에 code를 그대로 전달할 수 있다.
+  const [floor, setFloor] = useState<WizardFloorOption | null>(null);
+  const [staffRange, setStaffRange] = useState<WizardStaffOption | null>(null);
   const [works15Hours, setWorks15Hours] = useState(true);
+  // 마지막 버튼을 연속으로 눌러 같은 분석 요청이 여러 번 생기는 일을 막는다.
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
+  // 단계 값이 1~6 범위를 벗어나지 않도록 제한한다.
   const goNext = () => setStep((current) => Math.min(current + 1, stepCount) as WizardStep);
   const goBack = () => setStep((current) => Math.max(current - 1, 1) as WizardStep);
 
+  // 같은 조건을 다시 누르면 해제하고, 없으면 추가한다.
   function toggleFactor(factor: string) {
     setSelectedFactors((current) => (
       current.includes(factor)
         ? current.filter((item) => item !== factor)
         : [...current, factor]
     ));
+  }
+
+  /** 확인 화면의 선택값을 API 요청으로 바꾼 뒤, 성공한 결과를 다음 화면에 전달한다. */
+  async function handleResultSubmit() {
+    if (!region || !category || !storeSize || !floor || !staffRange || isSubmitting) {
+      setSubmitError('입력 조건을 모두 선택한 뒤 다시 시도해 주세요.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError('');
+    try {
+      const request = createWizardResultRequest(region, category.categoryCode, storeSize, floor, staffRange, works15Hours);
+      const result = await createWizardResult(request);
+      // WizardResultPage가 API 응답을 연결할 때 사용할 수 있도록 결과를 라우트 상태에 보관한다.
+      navigate('/wizard/result', { state: { wizardResult: result } });
+    } catch {
+      setSubmitError('분석 결과를 만들지 못했습니다. 잠시 후 다시 시도해 주세요.');
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -61,6 +84,7 @@ export default function WizardPage() {
 
         <div className="flex min-h-[calc(100vh-57px)] flex-col px-6 pb-6 pt-7 sm:min-h-[700px]">
           <div className="flex-1">
+            {/* 각 단계 UI는 부모 상태와 필요한 변경 함수만 전달받는다. */}
             {step === 1 && (
               <RegionStep
                 query={regionQuery}
@@ -77,43 +101,45 @@ export default function WizardPage() {
                 onToggleFactor={toggleFactor}
               />
             )}
-            {step === 3 && <StoreSizeStep value={storeSize} onChange={setStoreSize} />}
-            {step === 4 && <FloorStep value={floor} onChange={setFloor} />}
+            {step === 3 && <StoreSizeStep category={category} value={storeSize} onChange={setStoreSize} />}
+            {step === 4 && <FloorStep category={category} value={floor} onChange={setFloor} />}
             {step === 5 && (
               <StaffStep
-                range={staffRange}
+                category={category}
+                value={staffRange}
                 works15Hours={works15Hours}
-                onRangeChange={setStaffRange}
+                onChange={setStaffRange}
                 onWorks15HoursChange={setWorks15Hours}
               />
             )}
             {step === 6 && (
               <ReviewStep
-                region={region}
-                category={category}
-                storeSize={storeSizes[storeSize]}
-                floor={floor}
-                staffRange={staffOptions[staffRange]}
+                region={region ? getDistrictDisplayName(region) : '지역 선택 전'}
+                category={category?.categoryName ?? '업종 선택 전'}
+                storeSize={storeSize ? { label: storeSize.label, detail: `${storeSize.areaM2}㎡ (${storeSize.pyeong}평)` } : { label: '매장 크기 선택 전', detail: '' }}
+                floor={floor?.label ?? '층수 선택 전'}
+                staffRange={staffRange ?? { label: '직원 수 선택 전' }}
                 works15Hours={works15Hours}
               />
             )}
           </div>
 
+          {/* 마지막 단계 전에는 다음, 마지막 단계에서는 결과 페이지로 이동한다. */}
           {step < stepCount ? (
             <Button className="mt-8 w-full !bg-blue" onClick={goNext}>
               다음
             </Button>
           ) : (
-            <Button className="mt-8 w-full !bg-blue" onClick={() => navigate('/wizard/result')}>
-              분석 결과 보기
+            <Button className="mt-8 w-full !bg-blue" onClick={handleResultSubmit} disabled={isSubmitting}>
+              {isSubmitting ? '분석 결과를 만드는 중...' : '분석 결과 보기'}
             </Button>
           )}
+          {submitError && <p role="alert" className="mt-3 text-center text-caption text-red">{submitError}</p>}
         </div>
       </section>
     </main>
   );
 }
-
 function WizardHeader({ step, onBack, onClose }: { step: WizardStep; onBack: () => void; onClose: () => void }) {
   return (
     <header className="flex h-14 items-center justify-between px-6">
@@ -130,190 +156,5 @@ function WizardHeader({ step, onBack, onClose }: { step: WizardStep; onBack: () 
         ×
       </button>
     </header>
-  );
-}
-
-function StepTitle({ accent, children, description }: { accent: string; children: string; description?: string }) {
-  return (
-    <>
-      <h1 className="whitespace-pre-line text-[28px] font-bold leading-[1.35] tracking-[-0.04em] text-text">
-        <span className="text-blue">{accent}</span>{children}
-      </h1>
-      {description && <p className="mt-5 whitespace-pre-line text-body leading-5 text-sub">{description}</p>}
-    </>
-  );
-}
-
-function RegionStep({ query, region, onQueryChange, onRegionChange }: {
-  query: string;
-  region: string;
-  onQueryChange: (value: string) => void;
-  onRegionChange: (value: string) => void;
-}) {
-  const regions = ['서울시 성동구', '경기 성남시', '경북 상주시', '충남 논산시', '대구시 수성구'];
-
-  return (
-    <>
-      <StepTitle accent={'어느 지역구에서\n'}>창업하시는지 알려주세요.</StepTitle>
-      <label className="mt-7 flex h-14 items-center gap-3 rounded-xl border border-border px-4 text-sub focus-within:border-blue">
-        <span aria-hidden="true">⌕</span>
-        <input
-          value={query}
-          onChange={(event) => onQueryChange(event.target.value)}
-          className="min-w-0 flex-1 bg-transparent text-body font-medium text-text outline-none"
-          aria-label="창업 지역 검색"
-        />
-        <button type="button" aria-label="검색어 지우기" onClick={() => onQueryChange('')} className="text-xl leading-none">×</button>
-      </label>
-      <div className="mt-5">
-        {regions.map((item) => (
-          <button
-            key={item}
-            type="button"
-            onClick={() => onRegionChange(item)}
-            className={`block w-full border-b border-border py-6 text-left text-headline font-medium ${region === item ? 'text-blue font-bold' : 'text-text'}`}
-          >
-            {item}
-          </button>
-        ))}
-      </div>
-      <p className="mt-4 text-body text-sub">또는 지금 위치 <button type="button" className="font-bold text-blue">인천시 미추홀구에서 시작</button></p>
-    </>
-  );
-}
-
-function CategoryStep({ category, selectedFactors, onCategoryChange, onToggleFactor }: {
-  category: string;
-  selectedFactors: string[];
-  onCategoryChange: (value: string) => void;
-  onToggleFactor: (value: string) => void;
-}) {
-  return (
-    <>
-      <StepTitle accent={'어떤 업종으로\n'} description="서울시 상권분석서비스 외식업 10종 기준">창업하시는지 알려주세요.</StepTitle>
-      <div className="mt-6 grid grid-cols-2 gap-3">
-        {categories.map((item) => <SelectionCard key={item} label={item} selected={category === item} onClick={() => onCategoryChange(item)} />)}
-      </div>
-      <div className="mt-5 rounded-xl bg-surface p-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-headline font-bold text-navy">점수에 반영할 조건</h2>
-          <span className="text-caption text-sub">선택 사항</span>
-        </div>
-        <p className="mt-2 text-caption leading-4 text-sub">AI 창업 점수는 아래 지표들로 계산됩니다. 중요한 항목을 고르면 가중치가 조정됩니다.</p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {scoreFactors.map((factor) => (
-            <button key={factor} type="button" onClick={() => onToggleFactor(factor)}>
-              <Chip variant={selectedFactors.includes(factor) ? 'active' : 'default'}>
-                {selectedFactors.includes(factor) ? '✓ ' : '+ '}{factor}
-              </Chip>
-            </button>
-          ))}
-        </div>
-      </div>
-    </>
-  );
-}
-
-function StoreSizeStep({ value, onChange }: { value: StoreSize; onChange: (value: StoreSize) => void }) {
-  return (
-    <>
-      <StepTitle accent={'어떤 크기의 매장을\n'} description={'앞서 선택하신 한식음식점 매장들의\n유형별 평균 크기입니다.'}>생각하시는지 알려주세요.</StepTitle>
-      <div className="mt-8 grid grid-cols-3 gap-3">
-        {(Object.keys(storeSizes) as StoreSize[]).map((key) => {
-          const item = storeSizes[key];
-          return <SelectionCard key={key} label={item.label} detail={item.detail} selected={value === key} onClick={() => onChange(key)} />;
-        })}
-      </div>
-    </>
-  );
-}
-
-function FloorStep({ value, onChange }: { value: number; onChange: (value: number) => void }) {
-  const floors = [{ value: -1, label: '지하 1층' }, { value: 1, label: '1층' }, { value: 2, label: '2층' }];
-  return (
-    <>
-      <StepTitle accent={'매장이 어떤 층에 있는 걸\n'}>생각하시는지 알려주세요.</StepTitle>
-      <div className="mt-8 grid grid-cols-3 gap-3">
-        {floors.map((item) => <SelectionCard key={item.value} label={item.label} selected={value === item.value} onClick={() => onChange(item.value)} />)}
-      </div>
-    </>
-  );
-}
-
-function StaffStep({ range, works15Hours, onRangeChange, onWorks15HoursChange }: {
-  range: StaffRange;
-  works15Hours: boolean;
-  onRangeChange: (value: StaffRange) => void;
-  onWorks15HoursChange: (value: boolean) => void;
-}) {
-  return (
-    <>
-      <StepTitle accent={'직원을 몇 명 고용하실\n'}>예정인지 알려주세요.</StepTitle>
-      <p className="mt-4 inline-block rounded bg-blue/10 px-2 py-1 text-caption font-bold text-blue">Surbi 추가 단계 · 법적 의무 판정용</p>
-      <div className="mt-6 grid gap-3">
-        {(Object.keys(staffOptions) as StaffRange[]).map((key) => {
-          const item = staffOptions[key];
-          return <SelectionCard key={key} label={item.label} detail={item.detail} selected={range === key} onClick={() => onRangeChange(key)} wide />;
-        })}
-      </div>
-      <label className="mt-6 flex items-center justify-between rounded-xl bg-surface px-4 py-5 text-headline font-bold text-text">
-        주 15시간(월 60시간) 이상 근무
-        <input type="checkbox" checked={works15Hours} onChange={(event) => onWorks15HoursChange(event.target.checked)} className="h-5 w-10 accent-blue" />
-      </label>
-      <p className="mt-3 text-caption text-sub">국민연금 · 건강보험 가입 의무 판정에 사용됩니다</p>
-    </>
-  );
-}
-
-function ReviewStep({ region, category, storeSize, floor, staffRange, works15Hours }: {
-  region: string;
-  category: string;
-  storeSize: { label: string; detail: string };
-  floor: number;
-  staffRange: { label: string };
-  works15Hours: boolean;
-}) {
-  const rows = [
-    ['지역', region],
-    ['업종', category],
-    ['매장 크기', `${storeSize.label} ${storeSize.detail.replace('\n', ' ')}`],
-    ['층수', floor === -1 ? '지하 1층' : `${floor}층`],
-    ['직원 수', `${staffRange.label}${works15Hours ? ' (주 15시간 이상)' : ''}`],
-  ];
-
-  return (
-    <>
-      <StepTitle accent={'입력한 조건을\n'}>확인해 주세요.</StepTitle>
-      <dl className="mt-8 overflow-hidden rounded-2xl border border-border">
-        {rows.map(([label, value], index) => (
-          <div key={label} className={`grid grid-cols-[116px_1fr] px-5 py-6 ${index % 2 === 0 ? 'bg-surface' : 'bg-white'}`}>
-            <dt className="text-headline text-sub">{label}</dt>
-            <dd className="text-headline font-bold text-text">{value}</dd>
-          </div>
-        ))}
-      </dl>
-    </>
-  );
-}
-
-function SelectionCard({ label, detail, selected, onClick, wide = false }: {
-  label: string;
-  detail?: string;
-  selected: boolean;
-  onClick: () => void;
-  wide?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex min-h-24 flex-col items-center justify-center rounded-xl border p-3 text-center transition-colors ${
-        selected ? 'border-2 border-blue bg-blue/10 text-blue' : 'border-border bg-white text-text hover:border-blue/50'
-      } ${wide ? 'min-h-[110px]' : ''}`}
-    >
-      <span className={`mb-2 h-5 w-5 rounded-md ${selected ? 'bg-blue' : 'bg-[#dfe4eb]'}`} />
-      <span className="text-headline font-bold">{label}</span>
-      {detail && <span className="mt-1 whitespace-pre-line text-body font-medium text-sub">{detail}</span>}
-    </button>
   );
 }
