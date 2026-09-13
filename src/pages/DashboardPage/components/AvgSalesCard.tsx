@@ -1,4 +1,3 @@
-import { SurbiCard } from '@/shared/ui/SurbiCard';
 import { Badge } from '@/shared/ui/Badge';
 
 interface AvgSalesCardProps {
@@ -13,8 +12,8 @@ interface AvgSalesCardProps {
 }
 
 /**
- * 좌측 카드 ① 점포당 평균 매출액.
- * 목업 실측: 카드 400x172, 안쪽 여백 좌우 22 / 위아래 20, 요소 간격 10.
+ * 좌측 ① 점포당 평균 매출액.
+ * 카드 테두리와 안쪽 여백은 부모(좌측 패널)가 한 번만 씌운다.
  */
 export function AvgSalesCard({
   value,
@@ -25,21 +24,21 @@ export function AvgSalesCard({
   const isUp = changeRate >= 0;
 
   return (
-    <SurbiCard className="px-[22px] py-5 flex flex-col gap-2.5">
+    <div className="flex flex-col gap-4">
       {/* 지역 셀렉터 — 목업 116x31. 필터 동작은 API 확정 후 붙인다 */}
       <button
         type="button"
-        className="self-start flex items-center gap-2 h-[31px] px-3 rounded-lg bg-surface border border-border text-body font-bold text-text"
+        className="self-start flex items-center gap-2 h-[46px] px-4 rounded-xl bg-surface border border-border text-headline font-bold text-text"
       >
         {regionName}
-        <span className="text-label text-sub">▾</span>
+        <span className="text-caption text-sub">▾</span>
       </button>
 
-      <p className="text-caption text-sub">점포당 평균 매출액</p>
+      <p className="text-headline text-sub">점포당 평균 매출액</p>
 
       {/* 값 42px 높이, 뱃지는 세로 가운데 정렬 (목업 y=9.5 → 중앙) */}
-      <div className="flex items-center gap-2.5">
-        <p className="text-display font-bold text-navy leading-none">
+      <div className="flex items-center gap-4">
+        <p className="text-[45px] font-bold text-navy leading-none">
           {value === null ? '—' : `${(value / 10_000).toLocaleString()}만원`}
         </p>
         <Badge variant={isUp ? 'info' : 'warning'}>
@@ -47,9 +46,9 @@ export function AvgSalesCard({
         </Badge>
       </div>
 
-      <p className="text-label text-sub">
+      <p className="text-caption text-sub">
         전분기 대비 · 서울 {dongCount}개 행정동 기준
       </p>
-    </SurbiCard>
+    </div>
   );
 }
