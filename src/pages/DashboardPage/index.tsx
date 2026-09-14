@@ -1,0 +1,74 @@
+import { useState } from 'react';
+import { getDashboardMock, MOCK_QUARTERS } from './mock';
+import { SurbiCard } from '@/shared/ui/SurbiCard';
+import { AvgSalesCard } from './components/AvgSalesCard';
+import { DistrictTileGrid } from './components/DistrictTileGrid';
+import { TopNav } from './components/TopNav';
+import { KpiRow } from './components/KpiRow';
+import { QuarterlyTrend } from './components/QuarterlyTrend';
+import { CategoryCompare } from './components/CategoryCompare';
+import { DistrictTop10 } from './components/DistrictTop10';
+
+/**
+ * 03 종합 대시보드.
+ *
+ * 좌측 컬럼에 자치구 계열(분포 격자 + TOP 10)을 모으고, 우측은 전체 지표와 업종 비교를 둔다.
+ * 목업은 TOP 10이 우측 하단이지만, 같은 자치구 데이터를 붙여두는 편이 비교하기 좋다는 의견을 반영했다.
+ * 타일 격자는 TOP 10 자리를 내주려고 목업 크기(타일 41px)로 되돌렸다.
+ *
+ * 헤더는 화면 끝까지 닿아야 하므로 여백은 바깥이 아니라 본문 grid에만 준다.
+ */
+export default function DashboardPage() {
+  // API가 붙으면 이 상태를 그대로 useQuery의 파라미터로 넘긴다
+  const [quarter, setQuarter] = useState(MOCK_QUARTERS[0]);
+  const data = getDashboardMock(quarter);
+
+  // 업종 차트 범례에 쓸 분기 표기
+  const prevQuarter = data.salesTrend[data.salesTrend.length - 2]?.quarter ?? '';
+  const label = (q: string) => (q ? `${q.slice(0, 4)}년 ${q.slice(5)}분기` : '');
+
+  return (
+    <div className="min-h-screen bg-white font-sans">
+      <TopNav
+        quarters={MOCK_QUARTERS}
+        currentQuarter={quarter}
+        onQuarterChange={setQuarter}
+      />
+
+      <div className="grid grid-cols-[480px_1fr] gap-12 px-10 py-6">
+
+        {/* 좌측 — 자치구 계열을 카드 하나에 담는다 */}
+        <SurbiCard className="px-[26px] py-6 flex flex-col gap-7 self-start">
+          <AvgSalesCard
+            value={data.avgSalesPerStore}
+            changeRate={data.avgSalesPerStoreChangeRate}
+            dongCount={427}
+          />
+
+          {/* 카드 안쪽 여백을 상쇄해 선이 카드 끝까지 닿게 한다 */}
+          <div className="h-px bg-border -mx-[26px] -my-1.5" />
+
+          <DistrictTileGrid items={data.districtHeatmap} />
+
+          <div className="h-px bg-border -mx-[26px] -my-1.5" />
+
+          <DistrictTop10 items={data.districtTop10} />
+        </SurbiCard>
+
+        <main className="flex flex-col gap-20 self-start">
+          <KpiRow kpi={data.kpi} changeRate={data.kpiChangeRate} />
+
+          <QuarterlyTrend items={data.salesTrend} />
+
+          <CategoryCompare
+            current={data.categoryAvgSales}
+            previous={data.categoryAvgSalesPrev}
+            currentLabel={label(data.quarter)}
+            previousLabel={label(prevQuarter)}
+          />
+        </main>
+
+      </div>
+    </div>
+  );
+}
