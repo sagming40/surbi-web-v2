@@ -1,10 +1,12 @@
 import type { DistrictHeatmapItem } from '@/shared/types';
+import { formatKrw } from './format';
+import { Tooltip } from './Tooltip';
 
 interface DistrictTileGridProps {
   items: DistrictHeatmapItem[];
 }
 
-/** 매출 5분위별 타일 색. Tailwind가 소스를 문자열로 훑으므로 조립하지 말고 그대로 적어둔다 */
+/** 매출 5분위별 타일 색. */
 const LEVEL_CLASS = [
   'bg-blue/10',
   'bg-blue/25',
@@ -41,15 +43,15 @@ export function DistrictTileGrid({ items }: DistrictTileGridProps) {
         {items.map((d) => {
           const level = levelByGu.get(d.guCode) ?? 0;
           return (
-            <div
+            <Tooltip
               key={d.guCode}
-              title={`${d.guName} ${(d.sales / 100_000_000).toLocaleString()}억`}
+              label={`${d.guName} ${formatKrw(d.sales)}`}
               className={`h-[62px] rounded-xl flex items-center justify-center text-headline font-medium ${
                 LEVEL_CLASS[level]
               } ${level >= 3 ? 'text-white' : 'text-text'}`}
             >
               {shortName(d.guName)}
-            </div>
+            </Tooltip>
           );
         })}
       </div>
