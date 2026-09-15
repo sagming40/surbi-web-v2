@@ -16,9 +16,10 @@ const formatYearMonth = (v: string) => `${v.slice(0, 4)}년 ${Number(v.slice(4, 
 interface BuildingDetailPanelProps {
   data: BuildingDetailMock;
   onClose?: () => void; // 패널 닫기는 지도 쪽에서
+  onAnalyzeTrdar?: (guCode: string) => void;
 }
 
-export function BuildingDetailPanel({ data }: BuildingDetailPanelProps) {
+export function BuildingDetailPanel({ data, onAnalyzeTrdar }: BuildingDetailPanelProps) {
   const [copied, setCopied] = useState(false);
   const [active, setActive] = useState<SectionKey>('building');
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
@@ -228,6 +229,10 @@ export function BuildingDetailPanel({ data }: BuildingDetailPanelProps) {
 
               <button
                 type="button"
+                onClick={() => {
+                  if (!data.dongSummary) return;
+                  onAnalyzeTrdar?.(data.dongSummary.dongCode.slice(0, 5)); // 시군구 코드
+                }}
                 className="w-full mt-4 py-3 rounded-xl bg-blue text-white text-body font-bold hover:opacity-90"
               >
                 {data.dongSummary.dongName} 상권 분석 보기
