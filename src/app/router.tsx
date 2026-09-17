@@ -6,6 +6,7 @@ import ReportPage from '@/pages/ReportPage';
 import SimulationPage from '@/pages/SimulationPage';
 import DashboardPage from '@/pages/DashboardPage';
 import BuildingPage from '@/pages/BuildingPage';
+import MapExplorePage from '@/pages/MapExplorePage';
 
 export const router = createBrowserRouter([
   {
@@ -36,4 +37,8 @@ export const router = createBrowserRouter([
     path: '/building',
     element: <BuildingPage />, // 개발용 임시 페이지
   },
+  { 
+    path: '/map',
+    element: <MapExplorePage />,
+  }
 ]);

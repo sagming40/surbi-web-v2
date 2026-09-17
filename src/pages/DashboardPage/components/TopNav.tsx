@@ -19,10 +19,9 @@ const TABS = [
 const formatQuarter = (q: string) => `${q.slice(0, 4)}년 ${q.slice(5)}분기`;
 
 /**
- * 전 페이지 공통 헤더. 목업 실측: 높이 64, 좌우 여백 28, 아바타 30x30.
+ * 전 페이지 공통 헤더.
  *
- * 지도 탐색 · 창업 계산 · 지원 정책 탭은 라우트 이동만 연결한다.
- * 해당 페이지는 각 담당자 작업 범위.
+ * 지도 탐색 · 창업 계산 · 지원 정책 탭은 라우트 이동만 연결
  */
 export function TopNav({ quarters = [], currentQuarter, onQuarterChange }: TopNavProps) {
   const [open, setOpen] = useState(false);
