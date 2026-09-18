@@ -27,3 +27,6 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
+# 개인 작업 메모 (팀 공유 대상 아님)
+REFACTOR_TODO.md
