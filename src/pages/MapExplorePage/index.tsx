@@ -5,6 +5,9 @@ import { useMapScope, SCOPE_LABEL } from '@/features/map/mapScope';
 import { usePolygonLayer, useFitSelection } from '@/features/map/usePolygonLayer';
 import { RankingPanel, type RankingRow } from '@/features/map/RankingPanel';
 import { MapSideMenu, type MapTool } from '@/features/map/MapSideMenu';
+import { CategoryFilter } from '@/features/map/CategoryFilter';
+import { TrdarFilter } from '@/features/map/TrdarFilter';
+import { findCategory } from '@/features/map/mock/categories';
 import { seoulMapMock } from '@/features/map/mock/seoulMapMock';
 import { getDongMock } from '@/features/map/mock/seoulDongMock';
 
@@ -19,10 +22,14 @@ export default function MapExplorePage() {
   const [guCode, setGuCode] = useState<string | null>(null);
   const [dongCode, setDongCode] = useState<string | null>(null);
 
-  // 우측 메뉴의 도구 on/off. 각 도구의 실제 동작은 아직 미구현
-  const [tools, setTools] = useState<MapTool[]>([]);
-  const toggleTool = (t: MapTool) =>
-    setTools((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
+  // 우측 메뉴에서 열려 있는 도구. 한 번에 하나만 연다
+  const [activeTool, setActiveTool] = useState<MapTool | null>(null);
+  const selectTool = (t: MapTool) => setActiveTool((prev) => (prev === t ? null : t));
+
+  // 선택한 업종. null 이면 전체 업종 (SeoulMapRequest 의 categoryCode 와 같은 의미)
+  const [categoryCode, setCategoryCode] = useState<string | null>(null);
+  // 지도에 겹쳐 보일 상권 구분. 기본은 전부 꺼둔다 — 사용자가 고른 것만 그린다
+  const [trdarTypes, setTrdarTypes] = useState<string[]>([]);
 
   const { containerRef, map, error } = useKakaoMap();
   const { level, scope } = useMapScope(map);
@@ -112,9 +119,27 @@ export default function MapExplorePage() {
           />
         </div>
 
-        {/* 우측 플로팅 메뉴 */}
-        <div className="pointer-events-none absolute top-4 right-4 z-10">
-          <MapSideMenu active={tools} onToggle={toggleTool} />
+        {/* 우측 플로팅 메뉴 + 업종 패널 */}
+        <div className="pointer-events-none absolute top-4 right-4 z-10 flex items-start gap-2">
+          {activeTool === 'trdar' && (
+            <TrdarFilter
+              value={trdarTypes}
+              onChange={setTrdarTypes}
+              onClose={() => setActiveTool(null)}
+            />
+          )}
+          {activeTool === 'category' && (
+            <CategoryFilter
+              value={categoryCode}
+              onChange={setCategoryCode}
+              onClose={() => setActiveTool(null)}
+            />
+          )}
+          <MapSideMenu
+            active={activeTool}
+            onSelect={selectTool}
+            categoryLabel={findCategory(categoryCode)?.name}
+          />
         </div>
 
         {/* 임시 확인용 */}

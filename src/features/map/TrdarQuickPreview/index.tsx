@@ -18,15 +18,14 @@ type BadgeVariant = 'info' | 'warning' | 'success' | 'neutral';
 
 /**
  * 상권 구분 코드 → 배지 색.
- * 코드 체계(A/B/C/D 등)는 서버 값을 그대로 키로 쓴다 — 표시명(한글)이
- * 바뀌어도 이 매핑은 안 깨지도록 코드 기준으로 잡았다.
+ * 코드 체계는 서버 값을 그대로 키로 쓴다 — 표시명(한글)이 바뀌어도 이 매핑은 안 깨진다.
  * 실제 코드-이름 대응표가 오면 이 객체만 갱신하면 된다.
+ * 구분은 발달상권 / 골목상권 / 전통시장 3종이다.
  */
 const TYPE_BADGE_VARIANT: Record<string, BadgeVariant> = {
+  D: 'info',      // 발달상권
   A: 'neutral',   // 골목상권
-  B: 'info',      // 발달상권
-  C: 'success',   // 전통시장
-  D: 'warning',   // 관광특구
+  R: 'success',   // 전통시장
 };
 
 export function TrdarQuickPreview({

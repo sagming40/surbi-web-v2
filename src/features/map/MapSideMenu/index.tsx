@@ -4,15 +4,17 @@ import { SurbiCard } from '@/shared/ui/SurbiCard';
 /**
  * 지도 우측 플로팅 메뉴의 도구 3종.
  *
- * 각각 독립적으로 켜고 끌 수 있어서 단일 선택이 아니라 배열로 다룬다.
- * (업종 팝오버를 연 채로 상권영역을 켜둘 수 있다)
+ * 한 번에 하나만 열린다. 패널 두 개가 옆으로 나란히 펼쳐지면 지도를 너무 많이 가린다.
  */
 export type MapTool = 'category' | 'trdar' | 'draw';
 
 interface MapSideMenuProps {
-  /** 현재 켜져 있는 도구들 */
-  active: MapTool[];
-  onToggle: (tool: MapTool) => void;
+  /** 지금 열려 있는 도구. null 이면 아무것도 안 열림 */
+  active: MapTool | null;
+  /** 같은 도구를 다시 누르면 닫는다 */
+  onSelect: (tool: MapTool) => void;
+  /** 선택된 업종 이름. 있으면 "업종 필터" 대신 이걸 보여준다 */
+  categoryLabel?: string;
 }
 
 /** 목록·라벨·아이콘을 한곳에 묶어 둔다. 항목이 늘면 이 배열만 고치면 된다 */
@@ -49,23 +51,25 @@ const TOOLS: { key: MapTool; label: string; icon: ReactNode }[] = [
   },
 ];
 
-export function MapSideMenu({ active, onToggle }: MapSideMenuProps) {
+export function MapSideMenu({ active, onSelect, categoryLabel }: MapSideMenuProps) {
   return (
     <SurbiCard elevated className="pointer-events-auto w-[150px] py-2">
       {TOOLS.map((tool) => {
-        const on = active.includes(tool.key);
+        const on = active === tool.key;
+        // 업종을 고르면 메뉴에 그 이름이 보이도록 라벨을 바꾼다
+        const label = tool.key === 'category' ? (categoryLabel ?? tool.label) : tool.label;
         return (
           <button
             key={tool.key}
             type="button"
             aria-pressed={on}
-            onClick={() => onToggle(tool.key)}
+            onClick={() => onSelect(tool.key)}
             className={`flex w-full items-center gap-2.5 px-4 py-3 text-left text-body transition-colors ${
               on ? 'bg-blue/10 font-bold text-blue' : 'text-text hover:bg-surface'
             }`}
           >
             <span className="h-4 w-4 shrink-0">{tool.icon}</span>
-            {tool.label}
+            <span className="truncate">{label}</span>
           </button>
         );
       })}
