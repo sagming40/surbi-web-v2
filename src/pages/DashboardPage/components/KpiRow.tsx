@@ -1,5 +1,5 @@
 import type {DashboardKpi} from '@/shared/types';
-import { formatKrw } from './format';
+import { formatKrw } from '@/shared/lib/format';
 
 interface KpiRowProps {
   kpi: DashboardKpi;

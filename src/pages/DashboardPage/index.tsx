@@ -1,9 +1,12 @@
 import { useState } from 'react';
-import { getDashboardMock, MOCK_QUARTERS } from './mock';
+import { getDashboardMock } from './mock';
+import { MOCK_QUARTERS } from '@/shared/mock/quarters';
 import { SurbiCard } from '@/shared/ui/SurbiCard';
 import { AvgSalesCard } from './components/AvgSalesCard';
 import { DistrictTileGrid } from './components/DistrictTileGrid';
-import { TopNav } from './components/TopNav';
+import { TopNav } from '@/shared/ui/TopNav';
+import { DropdownSelect } from '@/shared/ui/DropdownSelect';
+import { formatQuarter } from '@/shared/lib/format';
 import { KpiRow } from './components/KpiRow';
 import { QuarterlyTrend } from './components/QuarterlyTrend';
 import { CategoryCompare } from './components/CategoryCompare';
@@ -29,11 +32,15 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-white font-sans">
-      <TopNav
-        quarters={MOCK_QUARTERS}
-        currentQuarter={quarter}
-        onQuarterChange={setQuarter}
-      />
+      {/* 분기 셀렉터는 대시보드에서만 쓴다. 헤더 자체는 로고·탭만 책임진다 */}
+      <TopNav>
+        <DropdownSelect
+          label="분기 선택"
+          options={MOCK_QUARTERS.map((q) => ({ value: q, label: formatQuarter(q) }))}
+          value={quarter}
+          onChange={(q) => q && setQuarter(q)}
+        />
+      </TopNav>
 
       <div className="grid grid-cols-[480px_1fr] gap-12 px-10 py-6">
 

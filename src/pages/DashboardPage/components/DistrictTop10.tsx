@@ -1,5 +1,5 @@
 import type { DistrictTop10Item } from '@/shared/types';
-import { formatKrw } from './format';
+import { formatKrw } from '@/shared/lib/format';
 import { Tooltip } from './Tooltip';
 
 interface DistrictTop10Props {

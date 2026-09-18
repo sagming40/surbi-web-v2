@@ -1,7 +1,7 @@
 import type { BuildingDetailMock } from './types';
 import { SurbiCard } from '@/shared/ui/SurbiCard';
 import { useEffect, useRef, useState } from 'react';
-import { formatKrw } from '@/pages/DashboardPage/components/format';
+import { formatKrw } from '@/shared/lib/format';
 import { HoverCard } from './HoverCard';
 
 type SectionKey = 'building' | 'trdar';

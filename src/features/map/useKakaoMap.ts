@@ -4,7 +4,10 @@ const SDK_ID = 'kakao-map-sdk';
 
 const SEOUL_CENTER = { lat: 37.5665, lng: 126.978 };
 
-export const DEFAULT_LEVEL = 9;
+export const DEFAULT_LEVEL = 8;
+export const MIN_LEVEL = 3;
+export const MAX_LEVEL = 8;
+
 
 export function getKakao(): any | undefined { 
   return (window as unknown as { kakao?: any }).kakao;
@@ -62,12 +65,16 @@ export function useKakaoMap() {
     loadKakaoSdk()
       .then((kakao) => {
         if (cancelled || !containerRef.current) return;
-        setMap(
-          new kakao.maps.Map(containerRef.current, {
-            center: new kakao.maps.LatLng(SEOUL_CENTER.lat, SEOUL_CENTER.lng),
-            level: DEFAULT_LEVEL,
-          }),
-        );
+        
+        const instance = new kakao.maps.Map(containerRef.current, {
+          center: new kakao.maps.LatLng(SEOUL_CENTER.lat, SEOUL_CENTER.lng),
+          level: DEFAULT_LEVEL,
+        });
+
+        instance.setMinLevel(MIN_LEVEL);
+        instance.setMaxLevel(MAX_LEVEL);
+
+        setMap(instance);
       })
       .catch((e: Error) => {
         if (!cancelled) setError(e.message);

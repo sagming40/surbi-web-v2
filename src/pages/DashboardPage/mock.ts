@@ -159,9 +159,6 @@ const MOCK_BY_QUARTER: Record<string, DashboardMock> = {
   '2025Q4': makePrevQuarter(dashboardMock, '2025Q4', 0.94),
 };
 
-/** 셀렉터에 노출할 분기. 목업이 있는 것만 넣는다 */
-export const MOCK_QUARTERS = ['2026Q1', '2025Q4'];
-
 /** 분기 코드로 목업을 꺼낸다. 없는 분기는 최신 분기로 대체 */
 export function getDashboardMock(quarter: string): DashboardMock {
   return MOCK_BY_QUARTER[quarter] ?? dashboardMock;
