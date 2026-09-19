@@ -4,6 +4,7 @@ import { useKakaoMap } from '@/features/map/useKakaoMap';
 import { useMapScope, SCOPE_LABEL } from '@/features/map/mapScope';
 import { usePolygonLayer, useFitSelection } from '@/features/map/usePolygonLayer';
 import { RankingPanel, type RankingRow } from '@/features/map/RankingPanel';
+import { DongReportDrawer } from '@/features/map/DongReportDrawer';
 import { MapSideMenu, type MapTool } from '@/features/map/MapSideMenu';
 import { CategoryFilter } from '@/features/map/CategoryFilter';
 import { TrdarFilter } from '@/features/map/TrdarFilter';
@@ -25,6 +26,8 @@ export default function MapExplorePage() {
   const [categoryCode, setCategoryCode] = useState<string | null>(null);
   // 겹쳐 보일 상권 구분. 기본은 전부 꺼둔다
   const [trdarTypes, setTrdarTypes] = useState<string[]>([]);
+  // 행정동을 고를 때만 01c 분석 드로어를 연다. 좌측 랭킹 패널과는 별개 상태다.
+  const [isDongReportOpen, setIsDongReportOpen] = useState(false);
 
   const { containerRef, map, error } = useKakaoMap();
   const { level, scope } = useMapScope(map);
@@ -33,11 +36,8 @@ export default function MapExplorePage() {
   usePolygonLayer(map, {
     guCode,
     dongCode,
-    onSelectGu: (code) => {
-      setGuCode(code);
-      setDongCode(null);
-    },
-    onSelectDong: setDongCode,
+    onSelectGu: selectGu,
+    onSelectDong: selectDong,
   });
   useFitSelection(map, guCode, dongCode);
 
@@ -79,6 +79,27 @@ export default function MapExplorePage() {
   );
 
   const guName = guOptions.find((o) => o.value === guCode)?.label;
+  const selectedDong = useMemo(
+    () => dongData?.dongRanking.find((dong) => dong.dongCode === dongCode) ?? null,
+    [dongCode, dongData],
+  );
+
+  /** 지도 폴리곤과 좌측 랭킹 패널이 공통으로 쓰는 행정동 선택 동작이다. */
+  function selectDong(code: string | null) {
+    setDongCode(code);
+    setIsDongReportOpen(Boolean(code));
+  }
+
+  /**
+   * 자치구 선택 경로를 한곳으로 모은다.
+   * 드롭다운·랭킹 행·지도 폴리곤 중 어디에서 골라도 행정동 드로어와
+   * 우측 도구 메뉴의 위치가 함께 원래 상태로 돌아가게 한다.
+   */
+  function selectGu(code: string | null) {
+    setGuCode(code);
+    setDongCode(null);
+    setIsDongReportOpen(false);
+  }
 
   return (
     <div className="h-screen bg-white font-sans">
@@ -99,23 +120,36 @@ export default function MapExplorePage() {
             highlightedCode={dongCode ?? guCode}
             onRowClick={(code) => {
               // 자치구 목록에서 누르면 그 구로 들어가고, 행정동 목록에서 누르면 그 동을 고른다
-              if (guCode) setDongCode(code);
-              else setGuCode(code);
+              if (guCode) selectDong(code);
+              else selectGu(code);
             }}
             guOptions={guOptions}
             selectedGuCode={guCode}
-            onSelectGu={(code) => {
-              setGuCode(code);
-              setDongCode(null); // 구가 바뀌면 동 선택은 버린다
-            }}
+            onSelectGu={selectGu}
             dongOptions={dongOptions}
             selectedDongCode={dongCode}
-            onSelectDong={setDongCode}
+            onSelectDong={selectDong}
           />
         </div>
 
-        {/* 우측 플로팅 메뉴 + 업종 패널 */}
-        <div className="pointer-events-none absolute top-4 right-4 z-10 flex items-start gap-2">
+        {/* 01c 전용 상세 패널. 좌측 랭킹 패널을 바꾸지 않고 선택된 동의 정보만 보여 준다. */}
+        {isDongReportOpen && selectedDong && guCode && guName && (
+          <DongReportDrawer
+            key={selectedDong.dongCode}
+            dongCode={selectedDong.dongCode}
+            dongName={selectedDong.dongName}
+            guCode={guCode}
+            guName={guName}
+            onClose={() => setIsDongReportOpen(false)}
+          />
+        )}
+
+        {/* 우측 플로팅 메뉴와 원격 브랜치의 업종·상권영역 필터 */}
+        <div
+          className={`pointer-events-none absolute top-4 z-10 flex items-start gap-2 transition-[right] ${
+            isDongReportOpen ? 'right-[404px]' : 'right-4'
+          }`}
+        >
           {activeTool === 'trdar' && (
             <TrdarFilter
               value={trdarTypes}
@@ -136,6 +170,17 @@ export default function MapExplorePage() {
             categoryLabel={findCategory(categoryCode)?.name}
           />
         </div>
+
+        {/* 닫은 뒤에도 같은 행정동의 상세 분석을 다시 열 수 있다. */}
+        {!isDongReportOpen && selectedDong && (
+          <button
+            type="button"
+            onClick={() => setIsDongReportOpen(true)}
+            className="absolute top-4 right-[174px] z-10 rounded-lg border border-border bg-white px-3 py-2 text-caption font-bold text-navy shadow-sm transition-colors hover:bg-surface"
+          >
+            분석 보기
+          </button>
+        )}
 
         {/* 임시 확인용 */}
         {map && (
