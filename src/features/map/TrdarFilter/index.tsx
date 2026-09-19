@@ -8,12 +8,7 @@ interface TrdarFilterProps {
   onClose: () => void;
 }
 
-/**
- * 상권영역 표시 설정. 우측 메뉴의 "상권영역"을 누르면 그 왼쪽에 펼쳐진다.
- *
- * 업종과 달리 다중 선택이다 — 어떤 종류의 상권을 지도에 겹쳐 보일지 고르는
- * 레이어 스위치라서, 발달상권과 전통시장을 같이 볼 수 있어야 한다.
- */
+/** 상권영역 표시 설정. 레이어 스위치라 업종과 달리 다중 선택 */
 export function TrdarFilter({ value, onChange, onClose }: TrdarFilterProps) {
   const toggle = (code: string) =>
     onChange(value.includes(code) ? value.filter((c) => c !== code) : [...value, code]);

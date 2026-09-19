@@ -11,14 +11,9 @@ import { findCategory } from '@/features/map/mock/categories';
 import { seoulMapMock } from '@/features/map/mock/seoulMapMock';
 import { getDongMock } from '@/features/map/mock/seoulDongMock';
 
-/**
- * 01 지도 탐색.
- *
- * 헤더(h-16) 아래를 지도가 전부 채운다. 좌측 랭킹 패널·우측 건물 상세 패널은
- * 지도 위에 떠 있는 형태라 이 컨테이너 안에 absolute 로 얹는다.
- */
+/** 01 지도 탐색. 헤더 아래를 지도가 채우고 패널들은 그 위에 absolute 로 얹는다 */
 export default function MapExplorePage() {
-  // 줌은 '무엇을 그릴지'만 정하고, '어디를 보는지'는 이 두 상태가 정한다.
+  // 어디를 보는지는 줌이 아니라 이 두 상태가 정한다
   const [guCode, setGuCode] = useState<string | null>(null);
   const [dongCode, setDongCode] = useState<string | null>(null);
 
@@ -26,9 +21,9 @@ export default function MapExplorePage() {
   const [activeTool, setActiveTool] = useState<MapTool | null>(null);
   const selectTool = (t: MapTool) => setActiveTool((prev) => (prev === t ? null : t));
 
-  // 선택한 업종. null 이면 전체 업종 (SeoulMapRequest 의 categoryCode 와 같은 의미)
+  // null 이면 전체 업종 (SeoulMapRequest 의 categoryCode)
   const [categoryCode, setCategoryCode] = useState<string | null>(null);
-  // 지도에 겹쳐 보일 상권 구분. 기본은 전부 꺼둔다 — 사용자가 고른 것만 그린다
+  // 겹쳐 보일 상권 구분. 기본은 전부 꺼둔다
   const [trdarTypes, setTrdarTypes] = useState<string[]>([]);
 
   const { containerRef, map, error } = useKakaoMap();

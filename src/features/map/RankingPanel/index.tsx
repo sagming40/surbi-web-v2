@@ -7,22 +7,15 @@ import { RankTable } from '@/shared/ui/RankTable';
 import { formatKrw } from '@/shared/lib/format';
 
 /**
- * 랭킹 한 행.
- *
- * 01(자치구 25개)과 01b(자치구 내 행정동)은 식별자 이름만 다르고 지표 구조가 같다.
- * 부르는 쪽에서 guCode/dongCode 를 code 로, guName/dongName 을 name 으로 맞춰 넘긴다.
+ * 랭킹 한 행. 01(자치구)과 01b(행정동)은 지표 구조가 같아서
+ * 부르는 쪽에서 guCode/dongCode 를 code 로 맞춰 넘긴다.
  */
 export interface RankingRow extends RankingMetrics {
   code: string;
   name: string;
 }
 
-/**
- * 지표 토글 4종.
- *
- * 순서와 키는 RankingMetricKey 를 그대로 따른다. 표시 형식이 지표마다 달라
- * 라벨·포맷터를 여기 한 곳에 묶어 뒀다 — 지표가 늘면 이 배열만 고치면 된다.
- */
+/** 지표 토글 4종. 표시 형식이 달라 라벨·포맷터를 여기 묶어 뒀다 */
 const METRICS: { key: RankingMetricKey; label: string; format: (v: number) => string }[] = [
   { key: 'storeCount', label: '점포수', format: (v) => `${v.toLocaleString()}곳` },
   { key: 'sales', label: '매출', format: formatKrw },
@@ -30,10 +23,7 @@ const METRICS: { key: RankingMetricKey; label: string; format: (v: number) => st
   { key: 'residentPopulation', label: '주거인구', format: (v) => `${v.toLocaleString()}명` },
 ];
 
-/**
- * 정렬 기준 2종.
- * 'rank' 라벨은 선택된 지표를 따라간다 — 매출을 보는 중이면 "매출순".
- */
+/** 정렬 2종. 'rank' 라벨은 선택된 지표를 따라간다 (매출 → "매출순") */
 const SORTS: { key: RankingSort; label: (metricLabel: string) => string }[] = [
   { key: 'rank', label: (m) => `${m}순` },
   { key: 'growth', label: () => '증감률순' },
@@ -49,7 +39,7 @@ interface RankingPanelProps {
   /** 패널 제목. "서울시 전체" 또는 자치구명 */
   title: string;
   quarter: string;
-  /** 행의 단위. "자치구" 또는 "행정동" — 부제·더보기 문구에 쓴다 */
+  /** 행의 단위. "자치구" 또는 "행정동" */
   unitLabel: string;
   rows: RankingRow[];
   onRowClick?: (code: string) => void;
@@ -86,8 +76,7 @@ export function RankingPanel({
 
   const metric = METRICS[metricIndex];
 
-  // 정렬은 전부 프론트에서 한다. rank 는 서버가 지표별로 매겨 보내주므로
-  // 지표를 바꿔도 API 를 다시 부르지 않는다.
+  // rank 를 서버가 지표별로 내려주므로 지표를 바꿔도 재호출이 없다
   const sorted = [...allRows].sort((a, b) => {
     const x = a[metric.key];
     const y = b[metric.key];
@@ -171,8 +160,7 @@ export function RankingPanel({
             {
               header: '순위',
               width: 'w-8',
-              // 증감률순으로 보면 서버가 준 지표 순위는 의미가 없다.
-              // 정렬된 자리를 그대로 순위로 쓴다.
+              // 증감률순일 땐 서버 순위가 의미 없어 정렬된 자리를 쓴다
               render: (row, index) => (
                 <span className="text-caption font-bold text-navy">
                   {sort === 'growth' ? index + 1 : (row[metric.key].rank ?? '-')}

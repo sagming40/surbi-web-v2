@@ -1,14 +1,8 @@
 import type { CategoryCode } from '@/shared/types/common';
 
 /**
- * 외식업 업종 10종.
- *
- * Surbi 는 외식업 창업 지원 서비스라 업종이 이 범위로 고정된다.
- * 소매·서비스 같은 다른 대분류는 다루지 않는다.
- *
- * ⚠️ `code` 는 임시값이다. 실제 서비스업종 코드(CS1xxxxx)는 상권분석서비스
- * 점포·매출 데이터에서 확인해야 한다. 이름은 확정, 코드는 미확정.
- * 서버가 GET /api/meta/categories 로 내려주면 이 파일은 지운다.
+ * 외식업 업종 10종. 서비스 범위가 외식업이라 여기서 고정된다.
+ * ⚠️ 이름은 확정, code 는 임시값. /api/meta/categories 가 붙으면 삭제
  */
 export interface FoodCategory {
   code: CategoryCode;
@@ -32,12 +26,7 @@ export function findCategory(code: string | null): FoodCategory | undefined {
   return FOOD_CATEGORIES.find((c) => c.code === code);
 }
 
-/**
- * 상권 구분 3종.
- *
- * ⚠️ `code` 는 임시값이다. 실제 상권 구분 코드(TRDAR_SE_CD)는
- * 상권분석서비스 영역-상권 데이터에서 확인해야 한다. 이름은 확정, 코드는 미확정.
- */
+/** 상권 구분 3종. ⚠️ 이름은 확정, code(TRDAR_SE_CD)는 임시값 */
 export interface TrdarType {
   code: string;
   name: string;

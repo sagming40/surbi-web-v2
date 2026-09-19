@@ -5,10 +5,7 @@ import { seoulOutlineGeo } from './mock/seoulOutlineGeo';
 import { seoulDistrictsGeo } from './mock/seoulDistrictsGeo';
 import { seoulDongsGeo } from './mock/seoulDongsGeo';
 
-/**
- * 레이어별 색. 지도 배경(도로·건물)이 알록달록해서 연한 파랑은 묻힌다.
- * 테두리는 진하게, 채움은 옅게 가져가는 편이 잘 보인다.
- */
+/** 지도 배경이 알록달록해서 테두리는 진하게, 채움은 옅게 간다 */
 const STYLE = {
   /** 서울 외곽선 — 가장 진하게 */
   outline: { color: '#16233d', weight: 3, opacity: 0.9 },
@@ -20,12 +17,7 @@ const STYLE = {
   fill: '#3b6ef3',
 } as const;
 
-/**
- * GeoJSON 좌표([경도, 위도])를 카카오 LatLng(위도, 경도)로 뒤집는다.
- * 폴리곤 하나가 여러 조각(섬)일 수 있어 조각별 경로 배열을 돌려준다.
- * 구멍(내부 링)은 쓰지 않는다 — 카카오 Polygon 은 path 배열로 구멍을 표현하지만
- * 서울 경계에는 구멍이 없어서 바깥 링만 그린다.
- */
+/** GeoJSON [경도, 위도] → 카카오 LatLng. 조각(섬)별 경로 배열을 돌려준다 */
 function toPaths(kakao: any, geometry: GeoJsonGeometry): any[][] {
   const rings =
     geometry.type === 'Polygon'
@@ -41,12 +33,7 @@ function drawPolygons(kakao: any, map: any, geometry: GeoJsonGeometry, opts: obj
   );
 }
 
-/**
- * 폴리곤 위에 이름을 띄우는 말풍선.
- *
- * 폴리곤마다 오버레이를 만들면 425개가 생기므로 하나를 만들어 돌려 쓴다.
- * 커서를 따라다녀야 해서 mousemove 마다 position 만 갈아끼운다.
- */
+/** 지역명 말풍선. 425개를 만들지 않도록 하나를 돌려 쓴다 */
 function createTooltip(kakao: any, map: any) {
   const el = document.createElement('div');
   Object.assign(el.style, {
@@ -85,23 +72,17 @@ function createTooltip(kakao: any, map: any) {
 }
 
 interface PolygonLayerOptions {
-  /** 선택된 자치구. null 이면 자치구 25개를 그린다 */
+  /** null 이면 자치구 25개를 그린다 */
   guCode: string | null;
-  /** 선택된 행정동. 해당 폴리곤만 강조한다 */
+  /** 해당 폴리곤만 강조한다 */
   dongCode: string | null;
   onSelectGu: (guCode: string) => void;
   onSelectDong: (dongCode: string) => void;
 }
 
 /**
- * 지도 위에 경계 폴리곤을 그린다. 레이어는 셋이다.
- *
- *   서울 외곽선   항상            굵은 테두리, 채움 없음, 클릭 안 받음
- *   자치구 25개   구 미선택 시    연한 채움
- *   행정동        구 선택 시      연한 채움 + 선택한 구의 테두리 유지
- *
- * 무엇을 그릴지는 줌이 아니라 **선택 상태**가 정한다.
- * 확대만 해서는 사용자가 어느 구를 보려는지 알 수 없기 때문이다.
+ * 경계 폴리곤 3층: 서울 외곽선(항상) / 자치구 25개 / 행정동(구 선택 시).
+ * 무엇을 그릴지는 줌이 아니라 선택 상태가 정한다.
  */
 export function usePolygonLayer(map: any, options: PolygonLayerOptions) {
   const { guCode, dongCode, onSelectGu, onSelectDong } = options;
@@ -131,13 +112,10 @@ export function usePolygonLayer(map: any, options: PolygonLayerOptions) {
 
     const isDongLevel = Boolean(guCode);
 
-    // ── 자치구 레이어 ──
-    // 구를 고른 뒤에도 나머지 구를 옅게 깔아둔다. 그래야 지도에서 바로 다른 구로 넘어갈 수 있다.
-    // 선택된 구 자리에는 행정동이 더 위(zIndex)에 덮이므로 안쪽 클릭은 동이 가져간다.
+    // ── 자치구 ── 구를 고른 뒤에도 나머지를 옅게 깔아둬야 지도에서 다른 구로 넘어갈 수 있다
     seoulDistrictsGeo.forEach((gu) => {
       const isSelected = gu.guCode === guCode;
-      // 선택된 구는 채움을 비운다 — 그 안의 행정동 폴리곤이 그대로 드러나야 하므로.
-      // 대신 테두리를 굵은 빨강으로 둘러 눈에 띄게 한다.
+      // 선택된 구는 채움을 비운다. 안쪽 행정동이 드러나야 하므로
       const base = isSelected ? 0 : isDongLevel ? 0.03 : 0.07;
 
       drawPolygons(kakao, map, gu.geometry, {
@@ -173,11 +151,10 @@ export function usePolygonLayer(map: any, options: PolygonLayerOptions) {
       });
     });
 
-    // ── 행정동 레이어 ── 구를 고른 뒤에만, 그 구의 동만
+    // ── 행정동 ── 구를 고른 뒤에만
     (isDongLevel ? (seoulDongsGeo[guCode as string] ?? []) : []).forEach((dong) => {
       const selected = dong.dongCode === dongCode;
-      // 선택된 구 안에서는 파란 채움을 거의 없앤다 — 빨간 구 테두리와 동 경계선만 남기려는 것.
-      // 0 으로 두면 폴리곤이 클릭을 못 받으므로 보이지 않을 만큼만 남긴다.
+      // 채움을 거의 없애 경계선만 남긴다. 0 이면 클릭을 못 받아서 0.02
       const base = selected ? 0.35 : 0.02;
 
       drawPolygons(kakao, map, dong.geometry, {
@@ -205,8 +182,7 @@ export function usePolygonLayer(map: any, options: PolygonLayerOptions) {
       });
     });
 
-    // 다시 그리기 전에 반드시 지운다. 카카오 오버레이는 React 바깥에 붙어서
-    // 컴포넌트가 리렌더된다고 알아서 사라지지 않는다 — 안 지우면 계속 쌓인다
+    // 카카오 오버레이는 React 바깥에 붙어서 직접 지워야 한다. 안 지우면 쌓인다
     return () => {
       tooltip.hide();
       drawn.forEach((p) => p.setMap(null));
@@ -214,10 +190,7 @@ export function usePolygonLayer(map: any, options: PolygonLayerOptions) {
   }, [map, guCode, dongCode]);
 }
 
-/**
- * 선택이 바뀌면 그 영역이 화면에 꽉 차도록 지도를 이동·확대한다.
- * 아무것도 선택 안 됐으면 서울 전체로 되돌린다.
- */
+/** 선택된 영역이 꽉 차도록 이동·확대. 선택이 없으면 서울 전체 */
 export function useFitSelection(map: any, guCode: string | null, dongCode: string | null) {
   useEffect(() => {
     const kakao = getKakao();
@@ -235,8 +208,7 @@ export function useFitSelection(map: any, guCode: string | null, dongCode: strin
     const bounds = new kakao.maps.LatLngBounds();
     toPaths(kakao, geometry).forEach((path) => path.forEach((ll) => bounds.extend(ll)));
 
-    // 좌측 패널(340px + 여백)에 가리지 않도록 왼쪽 여백을 크게 준다
-    // 인자 순서: top, right, bottom, left
+    // 좌측 패널에 가리지 않게 왼쪽 여백을 크게. 인자 순서: top, right, bottom, left
     map.setBounds(bounds, 24, 24, 24, 380);
   }, [map, guCode, dongCode]);
 }

@@ -9,12 +9,7 @@ interface CategoryFilterProps {
   onClose: () => void;
 }
 
-/**
- * 업종 선택 패널. 우측 메뉴의 "업종 필터"를 누르면 그 왼쪽에 펼쳐진다.
- *
- * 단일 선택이다 — SeoulMapRequest 의 categoryCode 가 하나만 받는다.
- * 여러 업종을 동시에 보려면 API 부터 바뀌어야 한다.
- */
+/** 업종 선택 패널. SeoulMapRequest 의 categoryCode 가 하나뿐이라 단일 선택 */
 export function CategoryFilter({ value, onChange, onClose }: CategoryFilterProps) {
   return (
     <SurbiCard elevated className="pointer-events-auto w-[168px] py-2">

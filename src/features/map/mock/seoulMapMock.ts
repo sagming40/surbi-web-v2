@@ -2,12 +2,8 @@ import type { SeoulMapResponse } from '@/shared/types/map';
 
 /**
  * 01 서울 전체 지도 탐색 mock.
- *
- * 지표 4종이 한 응답에 모두 담긴다 — 토글을 바꿔도 API 재호출이 없다는 설계를 그대로 따랐다.
- * rank 는 서버가 지표별로 매겨서 내려주는 값이라 여기서도 미리 계산해 넣어 두었다.
- *
- * 매출 수치는 목업 좌측 패널의 TOP 10 을 그대로 썼고, 나머지 15개 구는 이어서 채웠다.
- * 나머지 지표는 형태만 맞춘 임의값이다.
+ * 지표 4종이 한 응답에 담기고 rank 는 지표별로 미리 계산돼 있다 — 토글 시 재호출 없음.
+ * ⚠️ 매출은 목업 TOP 10 을 옮긴 값, 나머지는 형태만 맞춘 임의값
  */
 export const seoulMapMock: SeoulMapResponse = {
   quarter: '2026Q1',

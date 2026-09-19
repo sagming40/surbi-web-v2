@@ -13,20 +13,12 @@ interface DropdownSelectProps {
   value: string | null;
   onChange: (value: string | null) => void;
   disabled?: boolean;
-  /**
-   * 선택을 해제하는 항목의 라벨 (예: "전체").
-   * 넘기지 않으면 해제 항목이 안 나온다.
-   */
+  /** 해제 항목의 라벨 (예: "전체"). 없으면 해제 항목을 안 그린다 */
   clearLabel?: string;
   emptyMessage?: string;
 }
 
-/**
- * 지도 필터용 소형 드롭다운.
- *
- * 자치구 · 행정동 필터가 같은 모양이라 하나로 뺐다.
- * 선택 상태는 부모가 들고 있는다 (controlled).
- */
+/** 소형 드롭다운. 선택 상태는 부모가 들고 있는다 (controlled) */
 export function DropdownSelect({
   label,
   options,
@@ -39,9 +31,7 @@ export function DropdownSelect({
   const [open, setOpen] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
 
-  // 바깥을 누르면 닫는다. 열려 있을 때만 리스너를 건다.
-  // click 이 아니라 mousedown 인 이유: click 이면 버튼을 누른 그 클릭이
-  // "바깥 클릭"으로도 잡혀서 열자마자 닫힌다.
+  // 바깥 클릭으로 닫기. click 이면 여는 클릭이 바깥 클릭으로도 잡혀서 mousedown 을 쓴다
   useEffect(() => {
     if (!open) return;
     function onMouseDown(e: MouseEvent) {

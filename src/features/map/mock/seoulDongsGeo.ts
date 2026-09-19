@@ -2,18 +2,11 @@ import type { DongGeo } from '@/shared/types/map';
 import type { GuCode } from '@/shared/types/common';
 
 /**
- * 출처: 서울 열린데이터광장 — 서울시 상권분석서비스(영역-행정동) OA-22160
- *   https://data.seoul.go.kr/dataList/OA-22160/S/1/datasetView.do
- *   원본 SHP, EPSG:5181 (Korea 2000 / Central Belt)
- *
- * 변환: scripts/convertGeo.py
- *   행정동 425개만 읽어 공유 경계를 한 번만 단순화(topojson, 허용오차 15m)한 뒤,
- *   자치구는 그 안의 행정동을, 서울 외곽선은 자치구 전체를 합쳐서 만들었다.
- *   폴리곤을 따로따로 줄이면 이웃과 공유하는 경계가 다르게 깎여 선이 두 줄로 벌어진다.
- *   그래서 세 레이어가 같은 좌표를 공유하도록 하나의 원본에서 파생시켰다.
- *
- * ⚠️ BE 가 /api/geo/... 로 같은 데이터를 내려주면 이 파일은 지운다.
- * 좌표는 [경도, 위도] 순서(GeoJSON 규격)다. 카카오 LatLng 는 (위도, 경도)라 그릴 때 뒤집어야 한다.
+ * 출처: 서울 열린데이터광장 상권분석서비스(영역-행정동) OA-22160, EPSG:5181 SHP.
+ * 변환은 scripts/convertGeo.py — 행정동을 한 번만 단순화(15m)한 뒤 합쳐서
+ * 자치구·서울 외곽선을 만든다. 따로 줄이면 공유 경계가 어긋난다.
+ * 좌표는 [경도, 위도]. 카카오 LatLng 는 (위도, 경도)라 그릴 때 뒤집는다.
+ * ⚠️ BE 가 /api/geo/... 로 주면 삭제
  */
 
 /**

@@ -1,11 +1,7 @@
 import type { ReactNode } from 'react';
 import { SurbiCard } from '@/shared/ui/SurbiCard';
 
-/**
- * 지도 우측 플로팅 메뉴의 도구 3종.
- *
- * 한 번에 하나만 열린다. 패널 두 개가 옆으로 나란히 펼쳐지면 지도를 너무 많이 가린다.
- */
+/** 우측 플로팅 메뉴의 도구 3종. 한 번에 하나만 열린다 */
 export type MapTool = 'category' | 'trdar' | 'draw';
 
 interface MapSideMenuProps {
@@ -17,7 +13,7 @@ interface MapSideMenuProps {
   categoryLabel?: string;
 }
 
-/** 목록·라벨·아이콘을 한곳에 묶어 둔다. 항목이 늘면 이 배열만 고치면 된다 */
+/** 항목이 늘면 이 배열만 고치면 된다 */
 const TOOLS: { key: MapTool; label: string; icon: ReactNode }[] = [
   {
     key: 'category',
