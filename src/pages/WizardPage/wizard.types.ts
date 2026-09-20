@@ -40,3 +40,36 @@ export interface WizardStaffingResponse {
   minimumMonthlyHours: number;
   staffOptions: WizardStaffOption[];
 }
+
+export interface StartupAnalysisResponse {
+  status: string;
+  market_context: {
+    available: boolean;
+    overview: {
+      sales: {
+        amount: number | null;
+        previous_amount: number | null;
+        change_rate: number | null;
+        rank: number | null;
+        rank_total: number | null;
+      } | null;
+      store_count: {
+        value: number | null;
+        available: boolean;
+      } | null;
+      peak_sales_time: {
+        from_hour: number | null;
+        to_hour: number | null;
+      } | null;
+    } | null;
+  };
+  rent: {
+    available: boolean;
+    value: number | null;
+  };
+  support_policies: {
+    available: boolean;
+    items: string[] | null;
+  };
+  missing_capabilities: string[];
+}

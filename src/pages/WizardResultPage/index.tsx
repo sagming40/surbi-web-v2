@@ -1,4 +1,5 @@
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import type { StartupAnalysisResponse } from '../WizardPage/wizard.types';
 import { Badge } from '@/shared/ui/Badge';
 import { Button } from '@/shared/ui/Button';
 import { Chip } from '@/shared/ui/Chip';
@@ -20,6 +21,17 @@ const policies = [
 
 export default function WizardResultPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const wizardResult = (
+    location.state as { wizardResult?: StartupAnalysisResponse } | null
+  )?.wizardResult;
+
+  const overview = wizardResult?.market_context.overview;
+
+  const salesAmount = overview?.sales?.amount;
+  const salesChangeRate = overview?.sales?.change_rate;
+  const storeCount = overview?.store_count?.value;
 
   return (
     <main className="min-h-screen bg-surface font-sans text-text sm:py-8">
@@ -73,9 +85,23 @@ export default function WizardResultPage() {
               <div className="h-full w-[68.4%] rounded-full bg-blue" />
             </div>
             <div className="mt-3 grid grid-cols-3 gap-2">
-              <Metric label="예상 월 매출" value="4,180만원" />
-              <Metric label="폐업 위험도" value="38.6%" warning />
-              <Metric label="경쟁업체" value="213곳" />
+              <Metric
+                label="분기 매출"
+                value={salesAmount ? `${salesAmount.toLocaleString()}원` : '데이터 없음'}
+              />
+
+              <Metric
+                label="매출 증감률"
+                value={salesChangeRate !== null && salesChangeRate !== undefined
+                  ? `${salesChangeRate}%`
+                  : '데이터 없음'
+                }
+              />
+
+              <Metric
+                label="점포 수"
+                value={storeCount ? `${storeCount.toLocaleString()}곳` : '데이터 없음'}
+              />
             </div>
             <p className="mt-3 text-label leading-4 text-sub">※ AI 모델 예측값이며, 실제 매출이나 폐업 여부를 보장하지 않습니다.</p>
           </section>

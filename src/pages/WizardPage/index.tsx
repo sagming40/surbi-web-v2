@@ -8,8 +8,8 @@ import { StoreSizeStep } from './StoreSizeStep';
 import { FloorStep } from './FloorStep';
 import { StaffStep } from './StaffStep';
 import { ReviewStep } from './ReviewStep';
-import { createWizardResult } from './wizard.api';
-import { createWizardResultRequest, getDistrictDisplayName } from './wizard.presenter';
+import { createStartupAnalysis } from './wizard.api';
+import { createStartupAnalysisRequest, getDistrictDisplayName } from './wizard.presenter';
 import type { WizardFloorOption, WizardStaffOption, WizardStoreSizeOption } from './wizard.types';
 
 type WizardStep = 1 | 2 | 3 | 4 | 5 | 6;
@@ -60,8 +60,8 @@ export default function WizardPage() {
     setIsSubmitting(true);
     setSubmitError('');
     try {
-      const request = createWizardResultRequest(region, category.categoryCode, storeSize, floor, staffRange, works15Hours);
-      const result = await createWizardResult(request);
+      const request = createStartupAnalysisRequest(region, category.categoryCode, storeSize, floor, staffRange, works15Hours);
+      const result = await createStartupAnalysis(request);
       // WizardResultPage가 API 응답을 연결할 때 사용할 수 있도록 결과를 라우트 상태에 보관한다.
       navigate('/wizard/result', { state: { wizardResult: result } });
     } catch {

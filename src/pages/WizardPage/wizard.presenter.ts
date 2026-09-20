@@ -39,3 +39,40 @@ export function createWizardResultRequest(
     staff15hPlusCount: works15Hours ? staffCount : 0,
   };
 }
+
+export function createStartupAnalysisRequest(
+  region: DistrictGeo,
+  categoryCode: string,
+  storeSize: WizardStoreSizeOption,
+  floor: WizardFloorOption,
+  staff: WizardStaffOption,
+  works15Hours: boolean,
+) {
+  const staffCountByRange = {
+    none: 0,
+    oneToFour: 2,
+    fivePlus: 5,
+  } as const;
+
+  const floorByCode = {
+    basement: -1,
+    ground: 1,
+    upper: 2,
+  } as const;
+
+  return {
+    area: {
+      unit: 'GU',
+      code: region.guCode,
+    },
+    industry_code: categoryCode,
+    store: {
+      size_m2: storeSize.areaM2,
+      floor: floorByCode[floor.code],
+    },
+    employment: {
+      employee_count: staffCountByRange[staff.code],
+      weekly_hours_ge_15: works15Hours,
+    },
+  };
+}
