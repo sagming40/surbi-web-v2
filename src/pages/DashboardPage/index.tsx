@@ -11,6 +11,8 @@ import { KpiRow } from './components/KpiRow';
 import { QuarterlyTrend } from './components/QuarterlyTrend';
 import { CategoryCompare } from './components/CategoryCompare';
 import { DistrictTop10 } from './components/DistrictTop10';
+import { useBootstrap } from '@/shared/api/useBootstrap';
+import type { Quarter } from '@/shared/types/common';
 
 /**
  * 03 종합 대시보드.
@@ -22,8 +24,11 @@ import { DistrictTop10 } from './components/DistrictTop10';
  * 헤더는 화면 끝까지 닿아야 하므로 여백은 바깥이 아니라 본문 grid에만 준다.
  */
 export default function DashboardPage() {
-  // API가 붙으면 이 상태를 그대로 useQuery의 파라미터로 넘긴다
-  const [quarter, setQuarter] = useState(MOCK_QUARTERS[0]);
+  const { data: bootstrap } = useBootstrap();
+
+  const [picked, setPicked] = useState<Quarter | null>(null);
+  const quarters = bootstrap?.availableQuarters ?? MOCK_QUARTERS;
+  const quarter = picked ?? bootstrap?.latestQuarter ?? MOCK_QUARTERS[0];
   const data = getDashboardMock(quarter);
 
   // 업종 차트 범례에 쓸 분기 표기
@@ -36,9 +41,9 @@ export default function DashboardPage() {
       <TopNav>
         <DropdownSelect
           label="분기 선택"
-          options={MOCK_QUARTERS.map((q) => ({ value: q, label: formatQuarter(q) }))}
+          options={quarters.map((q) => ({ value: q, label: formatQuarter(q) }))}
           value={quarter}
-          onChange={(q) => q && setQuarter(q)}
+          onChange={(q) => q && setPicked(q)}
         />
       </TopNav>
 
