@@ -22,3 +22,21 @@ export interface PeriodRefDto {
   year: number;
   quarter: number;
 }
+
+export interface IndustryRefDto {
+  code: string;
+  name: string;
+}
+
+export interface NumericMetricDto {
+  value: NumericValueDto;
+  available: boolean;
+}
+
+export interface CapabilitySetDto {
+  building_detail: CapabilityStateDto;
+  startup_analysis: CapabilityStateDto;
+  ml_analysis: CapabilityStateDto;
+  favorites: CapabilityStateDto;
+  auth: CapabilityStateDto;
+}
