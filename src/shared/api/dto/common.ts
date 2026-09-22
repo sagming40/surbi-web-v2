@@ -29,7 +29,7 @@ export interface IndustryRefDto {
 }
 
 export interface NumericMetricDto {
-  value: NumericValueDto;
+  value: NumericValueDto | null;
   available: boolean;
 }
 
