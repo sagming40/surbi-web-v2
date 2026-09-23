@@ -8,10 +8,10 @@ import type { WizardFloorResponse, WizardStaffingResponse, WizardStoreSizeRespon
 export const mockDistrictGeoListResponse: DistrictGeoListResponse = {
   districts: [
     { guCode: '11200', guName: '성동구', geometry: { type: 'Polygon', coordinates: [[[127.02, 37.55], [127.08, 37.55], [127.08, 37.50], [127.02, 37.50], [127.02, 37.55]]] } },
-    { guCode: '41130', guName: '성남시', geometry: { type: 'Polygon', coordinates: [[[127.08, 37.45], [127.18, 37.45], [127.18, 37.40], [127.08, 37.40], [127.08, 37.45]]] } },
-    { guCode: '47250', guName: '상주시', geometry: { type: 'Polygon', coordinates: [[[128.00, 36.40], [128.10, 36.40], [128.10, 36.35], [128.00, 36.35], [128.00, 36.40]]] } },
-    { guCode: '44230', guName: '논산시', geometry: { type: 'Polygon', coordinates: [[[127.00, 36.25], [127.10, 36.25], [127.10, 36.20], [127.00, 36.20], [127.00, 36.25]]] } },
-    { guCode: '27260', guName: '수성구', geometry: { type: 'Polygon', coordinates: [[[128.60, 35.85], [128.70, 35.85], [128.70, 35.80], [128.60, 35.80], [128.60, 35.85]]] } },
+    { guCode: '11110', guName: '종로구', geometry: { type: 'Polygon', coordinates: [[[126.95, 37.60], [127.01, 37.60], [127.01, 37.55], [126.95, 37.55], [126.95, 37.60]]] } },
+    { guCode: '11140', guName: '중구', geometry: { type: 'Polygon', coordinates: [[[126.98, 37.58], [127.04, 37.58], [127.04, 37.54], [126.98, 37.54], [126.98, 37.58]]] } },
+    { guCode: '11170', guName: '용산구', geometry: { type: 'Polygon', coordinates: [[[126.95, 37.55], [127.02, 37.55], [127.02, 37.50], [126.95, 37.50], [126.95, 37.55]]] } },
+    { guCode: '11215', guName: '광진구', geometry: { type: 'Polygon', coordinates: [[[127.06, 37.57], [127.12, 37.57], [127.12, 37.53], [127.06, 37.53], [127.06, 37.57]]] } },
   ],
 };
 

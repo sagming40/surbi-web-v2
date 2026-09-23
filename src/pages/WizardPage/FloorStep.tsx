@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import type { CategoryItem } from '@/shared/types';
+import { DataStatusNotice } from '@/shared/ui/DataStatusNotice';
 
 import { getStoreFloors } from './wizard.api';
 import { wizardFloorStyles } from './wizard.styles';
@@ -45,6 +46,7 @@ export function FloorStep({ category, value, onChange }: FloorStepProps) {
         return <button key={floor.code} type="button" onClick={() => onChange(floor)} className={`${wizardFloorStyles.card} ${selected ? wizardFloorStyles.cardSelected : wizardFloorStyles.cardDefault}`}><span aria-hidden="true" className={`${wizardFloorStyles.icon} ${selected ? 'bg-blue' : 'bg-[#dfe4eb]'}`} /><span className="text-headline font-bold">{floor.label}</span></button>;
       })}
     </div>
+    <DataStatusNotice status="temporary" className="mt-4">층 선택지는 임시 데이터입니다. 선택값은 분석 요청에 전달되지만 현재 서버 계산에는 반영되지 않습니다.</DataStatusNotice>
   </>;
 }
 

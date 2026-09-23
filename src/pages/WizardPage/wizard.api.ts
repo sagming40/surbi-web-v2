@@ -1,8 +1,7 @@
-import type { CategoryCode, CategoryListResponse, DistrictGeoListResponse, WizardResultRequest, WizardResultResponse } from '@/shared/types';
+import type { CategoryCode, DistrictGeoListResponse } from '@/shared/types';
 
-import { mockDistrictGeoListResponse, mockFloorResponse, mockStaffingResponse, mockStoreSizeResponse, mockWizardResultResponse } from './wizard.mock';
+import { mockDistrictGeoListResponse, mockFloorResponse, mockStaffingResponse, mockStoreSizeResponse } from './wizard.mock';
 import type { WizardFloorResponse, WizardStaffingResponse, WizardStoreSizeResponse } from './wizard.types';
-import type { StartupAnalysisResponse } from './wizard.types';
 
 /**
  * GET /api/geo/districts
@@ -21,38 +20,6 @@ export async function getDistricts(): Promise<DistrictGeoListResponse> {
   return mockDistrictGeoListResponse;
 }
 
-/** GET /api/meta/categories — 위저드 2단계의 업종 목록 조회 */
-export async function getCategories(): Promise<CategoryListResponse> {
-  const response = await fetch('/api/v1/bootstrap');
-
-  if (!response.ok) {
-    throw new Error('업종 목록을 불러오지 못했습니다.');
-  }
-
-  const data = await response.json() as {
-    industries: Array<{
-      code: string;
-      name: string;
-    }>;
-  };
-
-  const foodCategories = data.industries
-    .filter((industry) => industry.code.startsWith('CS100'))
-    .map((industry) => ({
-      categoryCode: industry.code,
-      categoryName: industry.name,
-    }));
-
-  return {
-    categories: [
-      {
-        groupCode: 'CS1',
-        groupName: '외식업',
-        items: foodCategories,
-      },
-    ],
-  };
-}
 /**
  * GET /api/meta/store-sizes?categoryCode=
  *
@@ -90,38 +57,4 @@ export async function getStaffingOptions(categoryCode: CategoryCode): Promise<Wi
 
   await new Promise((resolve) => window.setTimeout(resolve, 180));
   return { ...mockStaffingResponse, categoryCode };
-}
-
-/**
- * POST /api/wizard/result — 마지막 확인 후 입력 조건으로 분석 결과를 만든다.
- * 현재 결과 페이지가 이미 존재하므로, 성공 응답은 라우트 상태로 넘겨 다음 단계에서 사용할 수 있게 한다.
- */
-export async function createWizardResult(request: WizardResultRequest): Promise<WizardResultResponse> {
-  // ── 실제 백엔드 연결 시 아래 mock 두 줄을 지우고 이 블록을 사용한다. ──
-  // const response = await fetch('/api/wizard/result', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) });
-  // if (!response.ok) throw new Error('창업 분석 결과를 만들지 못했습니다.');
-  // return response.json() as Promise<WizardResultResponse>;
-
-  await new Promise((resolve) => window.setTimeout(resolve, 260));
-  // 요청값을 실제로 받도록 인자를 유지한다. mock 단계에서는 결과 화면이 보는 공통 응답을 반환한다.
-  void request;
-  return mockWizardResultResponse;
-}
-
-export async function createStartupAnalysis(
-  request: unknown,
-): Promise<StartupAnalysisResponse> {
-  const response = await fetch('/api/v1/startup-analysis', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
-  });
-
-  if (!response.ok) {
-    throw new Error('창업 분석 결과를 불러오지 못했습니다.');
-  }
-
-  return response.json() as Promise<StartupAnalysisResponse>;
 }

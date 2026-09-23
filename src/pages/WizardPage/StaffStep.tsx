@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import type { CategoryItem } from '@/shared/types';
+import { DataStatusNotice } from '@/shared/ui/DataStatusNotice';
 
 import { getStaffingOptions } from './wizard.api';
 import { wizardStaffStyles } from './wizard.styles';
@@ -52,6 +53,7 @@ export function StaffStep({ category, value, works15Hours, onChange, onWorks15Ho
     </div>
     <label className={wizardStaffStyles.hoursSwitch}>주 15시간(월 {minimumMonthlyHours}시간) 이상 근무<button type="button" role="switch" aria-checked={works15Hours} onClick={() => onWorks15HoursChange(!works15Hours)} className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${works15Hours ? 'bg-blue' : 'bg-[#dfe4eb]'}`}><span className={`absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${works15Hours ? 'translate-x-5' : 'translate-x-0'}`} /></button></label>
     <p className="mt-4 text-caption text-sub">국민연금 · 건강보험 가입 의무 판정에 사용됩니다</p>
+    <DataStatusNotice status="temporary" className="mt-4">직원 수·근무시간 선택지는 임시 데이터입니다. 선택값은 분석 요청에 전달되지만 현재 서버 계산에는 반영되지 않습니다.</DataStatusNotice>
   </>;
 }
 

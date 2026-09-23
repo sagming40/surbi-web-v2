@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { isAxiosError } from 'axios';
 import { useNavigate } from 'react-router-dom';
 import type { CategoryItem, DistrictGeo } from '@/shared/types';
+import { useStartupAnalysis } from '@/shared/api/useStartupAnalysis';
 import { Button } from '@/shared/ui/Button';
 import { RegionStep } from './RegionStep';
 import { CategoryStep } from './CategoryStep';
@@ -8,9 +10,9 @@ import { StoreSizeStep } from './StoreSizeStep';
 import { FloorStep } from './FloorStep';
 import { StaffStep } from './StaffStep';
 import { ReviewStep } from './ReviewStep';
-import { createStartupAnalysis } from './wizard.api';
 import { createStartupAnalysisRequest, getDistrictDisplayName } from './wizard.presenter';
-import type { WizardFloorOption, WizardStaffOption, WizardStoreSizeOption } from './wizard.types';
+import { saveWizardResultNavigationState } from './wizard.navigation';
+import type { WizardFloorOption, WizardResultNavigationState, WizardStaffOption, WizardStoreSizeOption } from './wizard.types';
 
 type WizardStep = 1 | 2 | 3 | 4 | 5 | 6;
 // 진행률 계산과 다음/이전 이동의 상한값에 함께 쓰는 위저드 전체 단계 수다.
@@ -18,10 +20,11 @@ const stepCount = 6;
 
 export default function WizardPage() {
   const navigate = useNavigate();
+  const { mutateAsync: createStartupAnalysis, isPending: isSubmitting } = useStartupAnalysis();
 
   // 모든 단계가 공유해야 하는 입력값은 이 부모 컴포넌트에서 한 번만 관리한다.
   const [step, setStep] = useState<WizardStep>(1);
-  const [regionQuery, setRegionQuery] = useState('성동');
+  const [regionQuery, setRegionQuery] = useState('');
   // 문자열 대신 API 원본 객체를 보관해 이후 guCode가 필요한 요청에도 재사용할 수 있다.
   const [region, setRegion] = useState<DistrictGeo | null>(null);
   // API 원본 객체를 저장해 결과 생성 요청에 categoryCode를 그대로 보낼 수 있다.
@@ -33,8 +36,6 @@ export default function WizardPage() {
   const [floor, setFloor] = useState<WizardFloorOption | null>(null);
   const [staffRange, setStaffRange] = useState<WizardStaffOption | null>(null);
   const [works15Hours, setWorks15Hours] = useState(true);
-  // 마지막 버튼을 연속으로 눌러 같은 분석 요청이 여러 번 생기는 일을 막는다.
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
   // 단계 값이 1~6 범위를 벗어나지 않도록 제한한다.
@@ -57,16 +58,34 @@ export default function WizardPage() {
       return;
     }
 
-    setIsSubmitting(true);
     setSubmitError('');
     try {
       const request = createStartupAnalysisRequest(region, category.categoryCode, storeSize, floor, staffRange, works15Hours);
       const result = await createStartupAnalysis(request);
-      // WizardResultPage가 API 응답을 연결할 때 사용할 수 있도록 결과를 라우트 상태에 보관한다.
-      navigate('/wizard/result', { state: { wizardResult: result } });
-    } catch {
-      setSubmitError('분석 결과를 만들지 못했습니다. 잠시 후 다시 시도해 주세요.');
-      setIsSubmitting(false);
+      // 05·07 화면은 같은 분석을 다시 요청하지 않고 이 스냅샷을 재사용한다.
+      const navigationState: WizardResultNavigationState = {
+        selection: {
+          area: {
+            code: region.guCode,
+            name: getDistrictDisplayName(region),
+          },
+          industry: {
+            code: category.categoryCode,
+            name: category.categoryName,
+          },
+          storeSize,
+          floor,
+          staff: staffRange,
+          works15Hours,
+          preferredFactors: selectedFactors,
+        },
+        request,
+        result,
+      };
+      saveWizardResultNavigationState(navigationState);
+      navigate('/wizard/result', { state: navigationState });
+    } catch (error) {
+      setSubmitError(getAnalysisErrorMessage(error));
     }
   }
 
@@ -139,6 +158,21 @@ export default function WizardPage() {
       </section>
     </main>
   );
+}
+
+/** 서버 상태에 따라 사용자가 다음 조치를 알 수 있는 오류 문구를 만든다. */
+function getAnalysisErrorMessage(error: unknown) {
+  if (isAxiosError(error)) {
+    if (error.response?.status === 404) {
+      return '선택한 지역 또는 업종의 분석 데이터가 없습니다. 서울 자치구와 제공 업종을 선택해 주세요.';
+    }
+
+    if (!error.response) {
+      return '분석 서버에 연결하지 못했습니다. 백엔드가 8000번 포트에서 실행 중인지 확인해 주세요.';
+    }
+  }
+
+  return '분석 결과를 만들지 못했습니다. 잠시 후 다시 시도해 주세요.';
 }
 function WizardHeader({ step, onBack, onClose }: { step: WizardStep; onBack: () => void; onClose: () => void }) {
   return (

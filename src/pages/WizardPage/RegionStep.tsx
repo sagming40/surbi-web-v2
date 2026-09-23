@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { DistrictGeo } from '@/shared/types';
+import { DataStatusNotice } from '@/shared/ui/DataStatusNotice';
 
 import { getDistricts } from './wizard.api';
 import { getDistrictDisplayName } from './wizard.presenter';
@@ -58,7 +59,8 @@ export function RegionStep({ query, region, onQueryChange, onRegionChange }: Reg
       {!isLoading && filteredDistricts.map((district) => <button key={district.guCode} type="button" onClick={() => onRegionChange(district)} className={`${wizardRegionStyles.result} ${region?.guCode === district.guCode ? wizardRegionStyles.resultSelected : wizardRegionStyles.resultDefault}`}>{getDistrictDisplayName(district)}</button>)}
       {!isLoading && filteredDistricts.length === 0 && <p className="py-6 text-body text-sub">검색 결과가 없습니다.</p>}
     </div>
-    <p className="mt-4 text-body text-sub">또는 지금 위치 <button type="button" className="font-bold text-blue">인천시 미추홀구에서 시작</button></p>
+    <p className="mt-4 text-body text-sub">현재 위치 자동 선택 기능은 준비 중입니다.</p>
+    <DataStatusNotice status="temporary" className="mt-4">서울 자치구 명칭 데이터가 정비되기 전까지 일부 목록은 임시 데이터로 표시됩니다.</DataStatusNotice>
   </>;
 }
 

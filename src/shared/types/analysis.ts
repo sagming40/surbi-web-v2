@@ -64,6 +64,71 @@ export interface IncludedDong {
 // 05 · 창업 계산 결과 생성
 // ─────────────────────────────────────────────
 
+/** 실제 백엔드 POST /api/v1/startup-analysis의 요청 형식이다. */
+export interface StartupAnalysisRequest {
+  area: {
+    unit: 'GU';
+    code: GuCode;
+  };
+  industryCode: CategoryCode;
+  store: {
+    sizeM2: number;
+    floor: number;
+  };
+  employment: {
+    employeeCount: number;
+    weeklyHoursGe15: boolean;
+  };
+}
+
+export type AnalysisStatus = 'READY' | 'PARTIAL' | 'NOT_READY';
+
+/** 실제 백엔드 분석 응답에 공통으로 포함되는 생성 정보다. */
+export interface AnalysisMeta {
+  quarter: Quarter | null;
+  generatedAt: string;
+  partial: boolean;
+}
+
+export interface StartupAnalysisResponse {
+  meta: AnalysisMeta;
+  status: AnalysisStatus;
+  area: {
+    unit: string;
+    code: string;
+    name: string;
+  } | null;
+  industryCode: CategoryCode | null;
+  marketContext: {
+    available: boolean;
+    overview: {
+      sales: {
+        amount: number | null;
+        previousAmount: number | null;
+        changeRate: number | null;
+        rank: number | null;
+        rankTotal: number | null;
+        rankScope: string | null;
+      } | null;
+      /** unavailable이면 null이며, 실제 0은 그대로 0이다. */
+      storeCount: number | null;
+      peakSalesTime: {
+        fromHour: number | null;
+        toHour: number | null;
+      } | null;
+    } | null;
+  };
+  rent: {
+    available: boolean;
+    value: number | null;
+  };
+  supportPolicies: {
+    available: boolean;
+    items: string[] | null;
+  };
+  missingCapabilities: string[];
+}
+
 /** POST /api/wizard/result */
 export interface WizardResultRequest {
   guCode: GuCode;

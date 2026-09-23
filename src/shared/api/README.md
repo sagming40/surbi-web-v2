@@ -55,6 +55,8 @@ shared/api/
   adapters/          DTO → 프론트 타입(shared/types) 변환
   bootstrap.ts       getBootstrap() = 요청 + 변환
   useBootstrap.ts    화면에서 쓰는 훅
+  startupAnalysis.ts POST 창업 분석 요청 + 변환
+  useStartupAnalysis.ts 버튼 클릭 시 쓰는 mutation 훅
 ```
 
 데이터 흐름:
@@ -68,6 +70,19 @@ shared/api/
 ```
 
 **snake_case는 `dto/`와 `adapters/` 밖으로 나가면 안 된다.** 화면 코드에 `latest_period` 같은 이름이 보이면 잘못된 것이다.
+
+### startup analysis (위저드 결과 생성)
+
+```tsx
+import { useStartupAnalysis } from '@/shared/api/useStartupAnalysis';
+
+const { mutateAsync: createStartupAnalysis, isPending } = useStartupAnalysis();
+const result = await createStartupAnalysis(request);
+```
+
+- `POST /startup-analysis`는 사용자의 선택으로 새 분석을 생성하므로 조회 캐시가 아닌 `useMutation`으로 관리한다.
+- 화면은 `StartupAnalysisRequest`·`StartupAnalysisResponse`의 camelCase만 사용한다.
+- 백엔드의 snake_case 요청·응답은 `dto/startupAnalysis.ts`, `adapters/startupAnalysis.ts` 안에서만 처리한다.
 
 ---
 

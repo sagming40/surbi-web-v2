@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import type { CategoryItem } from '@/shared/types';
+import { DataStatusNotice } from '@/shared/ui/DataStatusNotice';
 
 import { getStoreSizes } from './wizard.api';
 import { wizardStoreSizeStyles } from './wizard.styles';
@@ -53,6 +54,7 @@ export function StoreSizeStep({ category, value, onChange }: StoreSizeStepProps)
         </button>;
       })}
     </div>
+    <DataStatusNotice status="temporary" className="mt-4">매장 크기 선택지는 임시 데이터입니다. 선택값은 분석 요청에 전달되지만 현재 서버 계산에는 반영되지 않습니다.</DataStatusNotice>
   </>;
 }
 
