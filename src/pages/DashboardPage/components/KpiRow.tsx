@@ -35,7 +35,7 @@ export function KpiRow({ kpi, changeRate }: KpiRowProps) {
             {rate !== null && (
               <div className="text-headline">
                 <span className={rate >= 0 ? 'text-blue' : 'text-red'}>
-                  {rate >= 0 ? '+' : ''}{rate}%
+                  {rate >= 0 ? '+' : ''}{rate.toFixed(1)}%
                 </span>
                 <span className="text-sub"> 전분기 대비</span>
               </div>

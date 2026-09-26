@@ -11,7 +11,7 @@ const HEADROOM = 0.15;
 const shortQuarter = (q: string) => `${q.slice(2, 4)}/${q.slice(5)}Q`;
 
 export function QuarterlyTrend({ items }: QuarterlyTrendProps) {
-  const max = Math.max(...items.map((d) => d.sales));
+  const max = Math.max(...items.map((d) => d.sales ?? 0));
   const axisMax = max * (1 + HEADROOM);
   const last = items.length - 1;
 
@@ -39,12 +39,12 @@ export function QuarterlyTrend({ items }: QuarterlyTrendProps) {
                 <span
                   className={`text-caption mb-1 ${i === last ? 'text-blue font-bold' : 'text-sub'}`}
                 >
-                  {Math.round(d.sales / 10_000).toLocaleString()}
+                  {d.sales === null ? '데이터 없음' : Math.round(d.sales / 10_000).toLocaleString()}
                 </span>
                 <Tooltip
-                  label={`${shortQuarter(d.quarter)} · ${Math.round(d.sales / 10_000).toLocaleString()}만원`}
+                  label={`${shortQuarter(d.quarter)} · ${d.sales === null ? '데이터 없음' : `${Math.round(d.sales / 10_000).toLocaleString()}만원`}`}
                   className={`w-[56%] rounded-t-md ${i === last ? 'bg-blue' : 'bg-blue/30'}`}
-                  style={{ height: `${(d.sales / axisMax) * 100}%` }}
+                  style={{ height: `${((d.sales ?? 0) / axisMax) * 100}%` }}
                 />
               </div>
 
