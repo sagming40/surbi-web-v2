@@ -29,12 +29,15 @@ export interface DashboardResponse extends QuarterScoped {
   districtHeatmap: DistrictHeatmapItem[];
   categoryAvgSales: CategoryAvgSales[];
   districtTop10: DistrictTop10Item[];
+  kpiChangeRate: Record<keyof DashboardKpi, number | null>;
+  avgSalesPerStoreChangeRate: number | null;
+  dongCount: number;
 }
 
 export interface DashboardKpi {
-  totalSales: number;
-  totalStores: number;
-  newStores: number;
+  totalSales: number | null;
+  totalStores: number | null;
+  newStores: number | null;
   /**
    * 해당 분기 전체 폐업률(%).
    * 실제 개·폐업 통계이며 ML 예측값 closureRisk와 구분한다.
@@ -44,14 +47,14 @@ export interface DashboardKpi {
 
 export interface DashboardTrendPoint {
   quarter: Quarter;
-  sales: number;
+  sales: number | null;
 }
 
 /** /api/geo/districts 폴리곤과 guCode로 조인해서 지도에 칠한다 */
 export interface DistrictHeatmapItem {
   guCode: GuCode;
   guName: string;
-  sales: number;
+  sales: number | null;
 }
 
 export interface CategoryAvgSales {

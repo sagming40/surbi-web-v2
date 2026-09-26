@@ -4,7 +4,7 @@ interface AvgSalesCardProps {
   /** 점포당 평균 매출액(원). 데이터가 없으면 null */
   value: number | null;
   /** 전분기 대비 증감률(%) */
-  changeRate: number;
+  changeRate: number | null;
   /** 각주에 표시할 집계 대상 행정동 수 */
   dongCount: number;
   /** 상단 셀렉터에 표시할 지역명 */
@@ -21,7 +21,6 @@ export function AvgSalesCard({
   dongCount,
   regionName = '서울특별시 전체',
 }: AvgSalesCardProps) {
-  const isUp = changeRate >= 0;
 
   return (
     <div className="flex flex-col gap-4">
@@ -41,9 +40,13 @@ export function AvgSalesCard({
         <p className="text-[45px] font-bold text-navy leading-none">
           {value === null ? '—' : `${Math.round(value / 10_000).toLocaleString()}만원`}
         </p>
-        <Badge variant={isUp ? 'info' : 'warning'}>
-          {isUp ? '▲' : '▼'} {Math.abs(changeRate)}%
-        </Badge>
+        {changeRate === null ? (
+          <Badge variant="info">-</Badge>
+        ) : (
+          <Badge variant={changeRate >= 0 ? 'info' : 'warning'}>
+            {changeRate >= 0 ? '▲' : '▼'} {Math.abs(changeRate).toFixed(1)}%
+          </Badge>
+        )}
       </div>
 
       <p className="text-caption text-sub">

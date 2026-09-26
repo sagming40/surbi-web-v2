@@ -28,7 +28,7 @@ export function DistrictTileGrid({ items }: DistrictTileGridProps) {
   const step = Math.max(1, Math.ceil(items.length / 5));
   const levelByGu = new Map(
     [...items]
-      .sort((a, b) => b.sales - a.sales)
+      .sort((a, b) => (b.sales ?? 0) - (a.sales ?? 0))
       .map((d, i) => [d.guCode, Math.max(0, 4 - Math.floor(i / step))] as const),
   );
 
@@ -45,7 +45,7 @@ export function DistrictTileGrid({ items }: DistrictTileGridProps) {
           return (
             <Tooltip
               key={d.guCode}
-              label={`${d.guName} ${formatKrw(d.sales)}`}
+              label={`${d.guName} ${(d.sales === null ? '데이터 없음' : formatKrw(d.sales))}`}
               className={`h-[62px] rounded-xl flex items-center justify-center text-headline font-medium ${
                 LEVEL_CLASS[level]
               } ${level >= 3 ? 'text-white' : 'text-text'}`}

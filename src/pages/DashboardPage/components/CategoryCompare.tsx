@@ -27,7 +27,7 @@ export function CategoryCompare({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <span className="text-[22px] font-bold text-navy">업종 대분류별 점포당 평균 매출액</span>
+        <span className="text-[22px] font-bold text-navy">업종별 점포당 평균 매출액</span>
 
         <div className="flex items-center gap-4 text-caption text-sub">
           <span className="flex items-center gap-1.5">
