@@ -1,9 +1,17 @@
-import type { DashboardAreaRankingDto, DashboardResponseDto } from '../dto/dashboard';
-import type { DashboardResponse, DistrictHeatmapItem, DistrictTop10Item } from '@/shared/types';
+import type { DashboardResponseDto } from '../dto/dashboard';
+import type { DashboardResponse } from '@/shared/types';
 import { calcChangeRate, pickMetric, toQuarter } from '../convert';
 
 export function toDashboard(dto: DashboardResponseDto): DashboardResponse {
   if (!dto.meta.period) throw new Error('dashboard 응답에 기준 분기(meta.period)가 없습니다');
+
+  const prevSales = pickMetric(dto.previous_sales);
+  const prevStores = pickMetric(dto.previous_store_count);
+  const prevAvg =
+    prevSales === null || prevStores === null || prevStores === 0
+      ? null
+      : prevSales / prevStores;
+  const avgSales = pickMetric(dto.average_sales_per_store);
 
   return {
     quarter: toQuarter(dto.meta.period),
@@ -20,11 +28,24 @@ export function toDashboard(dto: DashboardResponseDto): DashboardResponse {
       newStores: null,
       closureRate: null,
     },
-    avgSalesPerStore: pickMetric(dto.average_sales_per_store),
-    avgSalesPerStoreChangeRate: null, // 추후 계산 필요
+    avgSalesPerStore: avgSales,
+    avgSalesPerStoreChangeRate: calcChangeRate(avgSales, prevAvg),
     dongCount: dto.dong_count,
-    districtHeatmap: [],
-    districtTop10: [],
+    districtHeatmap: dto.gu_sales_distribution.map((item) => ({
+      guCode: item.area.code,
+      guName: item.area.name,
+      sales: item.sales,
+    })),
+    districtTop10: dto.top_gu_by_sales.flatMap((item) => {
+      if (item.rank === null || item.sales === null) return [];
+      return{
+        rank: item.rank,
+        guCode: item.area.code,
+        guName: item.area.name,
+        sales: item.sales,
+        changeRate: item.change_rate,
+      };
+    }),
     salesTrend: [],
     categoryAvgSales: [],
   };
