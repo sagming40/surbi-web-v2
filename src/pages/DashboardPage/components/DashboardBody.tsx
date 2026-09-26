@@ -4,8 +4,10 @@ import { AvgSalesCard } from './AvgSalesCard';
 import { DistrictTileGrid } from './DistrictTileGrid';
 import { DistrictTop10 } from './DistrictTop10';
 import { KpiRow } from './KpiRow';
-import { EmptyState } from '@/shared/ui/EmptyState';
+import { PLACEHOLDER_CATEGORY, PLACEHOLDER_CATEGORY_PREV, PLACEHOLDER_TREND } from '../placeholders';
+import { QuarterlyTrend } from './QuarterlyTrend';
 import type { DashboardResponse } from '@/shared/types/dashboard';
+import { CategoryCompare } from './CategoryCompare';
 
 interface DashboardBodyProps {
   data: DashboardResponse;
@@ -49,12 +51,27 @@ export function DashboardBody({ data }: DashboardBodyProps) {
       <main className="flex flex-col gap-20 self-start">
         <KpiRow kpi={data.kpi} changeRate={data.kpiChangeRate} />
 
-        <EmptyState
-          message="분기별 매출 추이 데이터가 없습니다."
-        />
-        <EmptyState
-          message="업종별 매출 비교 데이터가 없습니다."
-        />
+        <div className="relative">
+          <div className="blur-sm opacity-60 pointer-events-none select-none" aria-hidden>
+            <QuarterlyTrend items={PLACEHOLDER_TREND} />
+          </div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <p className="text-title font-bold text-text">분기별 매출 추이 데이터가 없습니다</p>
+          </div>
+        </div>
+        <div className="relative">
+          <div className="blur-sm opacity-60 pointer-events-none select-none" aria-hidden>
+            <CategoryCompare
+            current={PLACEHOLDER_CATEGORY}
+            previous={PLACEHOLDER_CATEGORY_PREV}
+            currentLabel="2026년 1분기"
+            previousLabel="2025년 4분기"
+            />
+          </div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <p className="text-title font-bold text-text">분기별 매출 추이 데이터가 없습니다</p>
+          </div>
+        </div>
       </main>
 
     </div>
