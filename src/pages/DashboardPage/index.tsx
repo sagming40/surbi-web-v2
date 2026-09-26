@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { MOCK_QUARTERS } from '@/shared/mock/quarters';
 import { TopNav } from '@/shared/ui/TopNav';
 import { DropdownSelect } from '@/shared/ui/DropdownSelect';
 import { formatQuarter } from '@/shared/lib/format';
@@ -24,7 +23,7 @@ export default function DashboardPage() {
   const { data: bootstrap } = useBootstrap();
 
   const [picked, setPicked] = useState<Quarter | null>(null);
-  const quarters = bootstrap?.availableQuarters ?? MOCK_QUARTERS;
+  const quarters = bootstrap?.availableQuarters ?? [];
   const quarter = picked ?? bootstrap?.latestQuarter ?? null;
   const { data, isError } = useDashboard(quarter);
 
