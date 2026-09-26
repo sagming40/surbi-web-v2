@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 import type { GeoJsonGeometry } from '@/shared/types/common';
+import type { DistrictGeo } from '@/shared/types/map';
 import { getKakao } from './useKakaoMap';
-import { seoulOutlineGeo } from './mock/seoulOutlineGeo';
-import { seoulDistrictsGeo } from './mock/seoulDistrictsGeo';
+// 행정동 경계는 01b 연결 때 /map/areas?unit=DONG 으로 교체한다
 import { seoulDongsGeo } from './mock/seoulDongsGeo';
 
 /** 지도 배경이 알록달록해서 테두리는 진하게, 채움은 옅게 간다 */
@@ -72,6 +72,10 @@ function createTooltip(kakao: any, map: any) {
 }
 
 interface PolygonLayerOptions {
+  /** 서울 외곽선. 서버 응답 전에는 undefined */
+  outline: GeoJsonGeometry | undefined;
+  /** 자치구 경계 25개. 서버 응답 전에는 undefined */
+  districts: DistrictGeo[] | undefined;
   /** null 이면 자치구 25개를 그린다 */
   guCode: string | null;
   /** 해당 폴리곤만 강조한다 */
@@ -85,7 +89,7 @@ interface PolygonLayerOptions {
  * 무엇을 그릴지는 줌이 아니라 선택 상태가 정한다.
  */
 export function usePolygonLayer(map: any, options: PolygonLayerOptions) {
-  const { guCode, dongCode, onSelectGu, onSelectDong } = options;
+  const { outline, districts, guCode, dongCode, onSelectGu, onSelectDong } = options;
 
   // 콜백이 매 렌더 새로 만들어져도 폴리곤을 다시 그리지 않도록 ref 에 담아 둔다
   const handlers = useRef({ onSelectGu, onSelectDong });
@@ -98,22 +102,24 @@ export function usePolygonLayer(map: any, options: PolygonLayerOptions) {
     const drawn: any[] = [];
     const tooltip = createTooltip(kakao, map);
 
-    // ── 서울 외곽선 ──
-    drawn.push(
-      ...drawPolygons(kakao, map, seoulOutlineGeo, {
-        strokeWeight: STYLE.outline.weight,
-        strokeColor: STYLE.outline.color,
-        strokeOpacity: STYLE.outline.opacity,
-        strokeStyle: 'solid',
-        fillOpacity: 0,
-        zIndex: 1,
-      }),
-    );
+    // ── 서울 외곽선 ── 응답이 오기 전에는 건너뛴다
+    if (outline) {
+      drawn.push(
+        ...drawPolygons(kakao, map, outline, {
+          strokeWeight: STYLE.outline.weight,
+          strokeColor: STYLE.outline.color,
+          strokeOpacity: STYLE.outline.opacity,
+          strokeStyle: 'solid',
+          fillOpacity: 0,
+          zIndex: 1,
+        }),
+      );
+    }
 
     const isDongLevel = Boolean(guCode);
 
     // ── 자치구 ── 구를 고른 뒤에도 나머지를 옅게 깔아둬야 지도에서 다른 구로 넘어갈 수 있다
-    seoulDistrictsGeo.forEach((gu) => {
+    (districts ?? []).forEach((gu) => {
       const isSelected = gu.guCode === guCode;
       // 선택된 구는 채움을 비운다. 안쪽 행정동이 드러나야 하므로
       const base = isSelected ? 0 : isDongLevel ? 0.03 : 0.07;
@@ -187,28 +193,110 @@ export function usePolygonLayer(map: any, options: PolygonLayerOptions) {
       tooltip.hide();
       drawn.forEach((p) => p.setMap(null));
     };
-  }, [map, guCode, dongCode]);
+  }, [map, outline, districts, guCode, dongCode]);
 }
 
-/** 선택된 영역이 꽉 차도록 이동·확대. 선택이 없으면 서울 전체 */
-export function useFitSelection(map: any, guCode: string | null, dongCode: string | null) {
+/**
+ * 지도 위에 떠 있는 패널이 가리는 폭(px). 선택 영역은 이 여백을 뺀 "보이는 영역" 가운데에 온다.
+ * - 왼쪽: 랭킹 패널 (left-4 + w-[340px]) + 여유
+ * - 오른쪽: 드로어가 열리면 드로어 (right-4 + w-[380px]), 닫혀 있으면 도구 메뉴 (right-4 + w-[150px])
+ */
+function getPadding(drawerOpen: boolean) {
+  return { top: 24, right: drawerOpen ? 420 : 190, bottom: 24, left: 380 };
+}
+
+type Padding = ReturnType<typeof getPadding>;
+
+function boundsOf(kakao: any, geometry: GeoJsonGeometry): any {
+  const bounds = new kakao.maps.LatLngBounds();
+  toPaths(kakao, geometry).forEach((path) => path.forEach((ll) => bounds.extend(ll)));
+  return bounds;
+}
+
+/** setBounds 를 인자 순서(top, right, bottom, left)대로 부른다 */
+function fitBounds(map: any, bounds: any, pad: Padding) {
+  map.setBounds(bounds, pad.top, pad.right, pad.bottom, pad.left);
+}
+
+/**
+ * 후보 영역이 전부 들어가는 줌 레벨 중 가장 큰 값(= 가장 멀리 본 값).
+ * 카카오 줌은 정수 단계라서 영역마다 setBounds 를 따로 하면 비슷한 크기라도
+ * 어떤 곳은 꽉 차고 어떤 곳은 절반 크기가 된다. 같은 단위끼리는 레벨을 맞춘다.
+ * 레벨 계산은 화면 크기에 따라 달라서 미리 정해 둘 수 없다 — setBounds 로 재 본다.
+ */
+function commonLevel(map: any, kakao: any, candidates: GeoJsonGeometry[], pad: Padding): number {
+  let level = 1;
+  candidates.forEach((geometry) => {
+    fitBounds(map, boundsOf(kakao, geometry), pad);
+    level = Math.max(level, map.getLevel());
+  });
+  return level;
+}
+
+/** 영역 중심을 화면 가운데가 아니라 패널을 뺀 "보이는 영역" 가운데에 둔다 */
+function centerInVisibleArea(map: any, kakao: any, bounds: any, pad: Padding) {
+  const sw = bounds.getSouthWest();
+  const ne = bounds.getNorthEast();
+  map.setCenter(
+    new kakao.maps.LatLng((sw.getLat() + ne.getLat()) / 2, (sw.getLng() + ne.getLng()) / 2),
+  );
+
+  // 지금은 영역 중심이 화면 정중앙에 있다. 보이는 영역의 중심은 (왼쪽 여백 - 오른쪽 여백) / 2 만큼
+  // 오른쪽에 있으므로, 지도 중심을 그만큼 반대(왼쪽)로 옮기면 영역이 보이는 영역 가운데로 온다
+  const proj = map.getProjection();
+  const center = proj.containerPointFromCoords(map.getCenter());
+  const shifted = new kakao.maps.Point(
+    center.x - (pad.left - pad.right) / 2,
+    center.y - (pad.top - pad.bottom) / 2,
+  );
+  map.setCenter(proj.coordsFromContainerPoint(shifted));
+}
+
+interface FitSelectionOptions {
+  outline: GeoJsonGeometry | undefined;
+  districts: DistrictGeo[] | undefined;
+  guCode: string | null;
+  dongCode: string | null;
+  /** 01c 드로어가 열려 있으면 오른쪽 여백을 드로어 폭만큼 잡는다 */
+  drawerOpen: boolean;
+}
+
+/**
+ * 선택이 바뀌면 그 영역으로 이동·확대한다. 선택이 없으면 서울 전체.
+ * 자치구끼리, 같은 구 안의 행정동끼리는 줌 레벨을 맞춰서 선택할 때마다 크기가 들쭉날쭉하지 않게 한다.
+ */
+export function useFitSelection(map: any, options: FitSelectionOptions) {
+  const { outline, districts, guCode, dongCode, drawerOpen } = options;
+
   useEffect(() => {
     const kakao = getKakao();
-    if (!map || !kakao) return;
+    // 외곽선이 없으면 기준으로 삼을 범위가 없어서 이동하지 않는다
+    if (!map || !kakao || !outline) return;
 
-    let geometry: GeoJsonGeometry = seoulOutlineGeo;
+    const pad = getPadding(drawerOpen);
 
-    if (dongCode && guCode) {
-      geometry =
-        seoulDongsGeo[guCode]?.find((d) => d.dongCode === dongCode)?.geometry ?? geometry;
-    } else if (guCode) {
-      geometry = seoulDistrictsGeo.find((d) => d.guCode === guCode)?.geometry ?? geometry;
+    // 비교 대상: 동을 골랐으면 같은 구의 동 전체, 구를 골랐으면 자치구 전체
+    const siblings: { code: string; geometry: GeoJsonGeometry }[] =
+      dongCode && guCode
+        ? (seoulDongsGeo[guCode] ?? []).map((d) => ({ code: d.dongCode, geometry: d.geometry }))
+        : guCode
+          ? (districts ?? []).map((d) => ({ code: d.guCode, geometry: d.geometry }))
+          : [];
+    const target = siblings.find((s) => s.code === (dongCode ?? guCode));
+
+    // 선택이 없거나 아직 경계가 없으면 서울 전체를 보여 준다
+    if (!target) {
+      fitBounds(map, boundsOf(kakao, outline), pad);
+      return;
     }
 
-    const bounds = new kakao.maps.LatLngBounds();
-    toPaths(kakao, geometry).forEach((path) => path.forEach((ll) => bounds.extend(ll)));
-
-    // 좌측 패널에 가리지 않게 왼쪽 여백을 크게. 인자 순서: top, right, bottom, left
-    map.setBounds(bounds, 24, 24, 24, 380);
-  }, [map, guCode, dongCode]);
+    const level = commonLevel(
+      map,
+      kakao,
+      siblings.map((s) => s.geometry),
+      pad,
+    );
+    map.setLevel(level);
+    centerInVisibleArea(map, kakao, boundsOf(kakao, target.geometry), pad);
+  }, [map, outline, districts, guCode, dongCode, drawerOpen]);
 }

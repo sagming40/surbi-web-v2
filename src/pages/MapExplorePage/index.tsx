@@ -9,8 +9,9 @@ import { MapSideMenu, type MapTool } from '@/features/map/MapSideMenu';
 import { CategoryFilter } from '@/features/map/CategoryFilter';
 import { TrdarFilter } from '@/features/map/TrdarFilter';
 import { findCategory } from '@/features/map/mock/categories';
-import { seoulMapMock } from '@/features/map/mock/seoulMapMock';
 import { getDongMock } from '@/features/map/mock/seoulDongMock';
+import { useSeoulMap } from '@/shared/api/useSeoulMap';
+import { useDistrictGeos, useSeoulOutline } from '@/shared/api/useMapAreas';
 
 /** 01 지도 탐색. 헤더 아래를 지도가 채우고 패널들은 그 위에 absolute 로 얹는다 */
 export default function MapExplorePage() {
@@ -32,14 +33,22 @@ export default function MapExplorePage() {
   const { containerRef, map, error } = useKakaoMap();
   const { level, scope } = useMapScope(map);
 
+  const { data: seoulMap } = useSeoulMap();
+
+  // 경계선. 기본값(= [])을 주지 않는다 — 렌더마다 새 배열이 생겨 폴리곤을 계속 다시 그리게 된다
+  const { data: outline } = useSeoulOutline();
+  const { data: districts } = useDistrictGeos();
+
   // 폴리곤을 그리고, 선택이 바뀌면 그쪽으로 이동·확대한다
   usePolygonLayer(map, {
+    outline,
+    districts,
     guCode,
     dongCode,
     onSelectGu: selectGu,
     onSelectDong: selectDong,
   });
-  useFitSelection(map, guCode, dongCode);
+  useFitSelection(map, { outline, districts, guCode, dongCode, drawerOpen: isDongReportOpen });
 
   /**
    * 자치구를 고르기 전에는 자치구 25개(01), 고른 뒤에는 그 구의 행정동(01b).
@@ -56,21 +65,21 @@ export default function MapExplorePage() {
       }));
       return { rows, unitLabel: '행정동', quarter: dongData.quarter };
     }
-    const rows: RankingRow[] = seoulMapMock.districtRanking.map((d) => ({
+    const rows: RankingRow[] = (seoulMap?.districtRanking ?? []).map((d) => ({
       ...d,
       code: d.guCode,
       name: d.guName,
     }));
-    return { rows, unitLabel: '자치구', quarter: seoulMapMock.quarter };
-  }, [dongData]);
+    return { rows, unitLabel: '자치구', quarter: seoulMap?.quarter ?? '' };
+  }, [dongData, seoulMap]);
 
   // 필터 목록은 01 응답에 담긴 자치구를 그대로 쓴다 — 별도 조회가 필요 없다
   const guOptions = useMemo(
     () =>
-      seoulMapMock.districtRanking
+      (seoulMap?.districtRanking ?? [])
         .map((d) => ({ value: d.guCode, label: d.guName }))
         .sort((a, b) => a.label.localeCompare(b.label, 'ko')),
-    [],
+    [dongData, seoulMap],
   );
 
   const dongOptions = useMemo(
