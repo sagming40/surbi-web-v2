@@ -22,3 +22,4 @@ export * from './report';
 export * from './analysis';
 export * from './dashboard';
 export * from './favorite';
+export * from './bootstrap';
