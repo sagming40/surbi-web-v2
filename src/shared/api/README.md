@@ -57,6 +57,10 @@ shared/api/
   useBootstrap.ts    화면에서 쓰는 훅
   startupAnalysis.ts POST 창업 분석 요청 + 변환
   useStartupAnalysis.ts 버튼 클릭 시 쓰는 mutation 훅
+  analysisReport.ts  POST AI 분석 보고서 요청 + 변환
+  useAnalysisReport.ts 보고서 화면에서 쓰는 mutation 훅
+  areas.ts           지역·상권 선택 목록 요청 + 변환
+  useAreas.ts        지역·상권 선택 목록 캐시 훅
 ```
 
 데이터 흐름:
@@ -83,6 +87,19 @@ const result = await createStartupAnalysis(request);
 - `POST /startup-analysis`는 사용자의 선택으로 새 분석을 생성하므로 조회 캐시가 아닌 `useMutation`으로 관리한다.
 - 화면은 `StartupAnalysisRequest`·`StartupAnalysisResponse`의 camelCase만 사용한다.
 - 백엔드의 snake_case 요청·응답은 `dto/startupAnalysis.ts`, `adapters/startupAnalysis.ts` 안에서만 처리한다.
+
+### analysis report (07 AI 분석 보고서)
+
+```tsx
+import { useAnalysisReport } from '@/shared/api/useAnalysisReport';
+
+const { mutate: createReport, data: report } = useAnalysisReport();
+createReport(wizardRequest);
+```
+
+- `POST /analysis-reports`는 위저드의 `StartupAnalysisRequest`와 같은 입력을 받는다.
+- 현재 백엔드는 시장 통계만 제공한다. `report.ml.available === false` 또는
+  `report.summary.available === false`라면 점수·예측·자연어 요약을 임의 값으로 표시하지 않는다.
 
 ---
 

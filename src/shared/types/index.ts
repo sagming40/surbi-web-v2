@@ -23,3 +23,5 @@ export * from './analysis';
 export * from './dashboard';
 export * from './favorite';
 export * from './bootstrap';
+export * from './analysisReport';
+export * from './areaSelection';

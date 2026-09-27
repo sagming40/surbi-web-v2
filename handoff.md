@@ -3,10 +3,53 @@
 ## 현재 상태
 
 - 작업 브랜치: `feature/wizard-api`
-- 현재 HEAD: `c392bff` 이후의 로컬 미커밋 작업
-- 원격 `feature/wizard-api`보다 로컬이 앞서 있다. 이번 변경은 아직 commit/push하지 않았다.
+- 이번 작업 시작 기준 HEAD: `1ae7fbd feat: 04-05 창업 분석 API 연동`
+- 아래 07·12 API 연동 변경은 이 문서를 작성하는 시점에는 아직 commit/push하지 않았다.
 - `main`에는 직접 commit/push하지 않는다.
 - 팀원의 `feature/shared-api`는 이미 현재 브랜치에 병합되어 있다.
+
+## 이번 작업 완료: 07 AI 분석 보고서 + 12 창업 시뮬레이션 API 연동
+
+### 07 AI 분석 보고서 (`/report`)
+
+- `POST /api/v1/analysis-reports`를 실제 호출한다.
+- 04에서 만든 요청 조건을 `WizardResultNavigationState`로 전달받아 같은 조건으로 보고서를 생성한다.
+- 실제 응답의 분기 매출·점포 수·유동/상주/직장 인구·매출 증감률·순위·피크 시간·주요 고객을 표시한다.
+- 현재 백엔드에 없는 ML 점수·예상 매출·폐업 위험도·자연어 요약은 임의 수치 대신 `준비 중`으로 표시한다.
+
+### 12 창업 시뮬레이션 (`/simulation`)
+
+- 실제 카카오맵은 유지하며, 위저드에서 진입할 경우 자치구·업종을 초기 필터로 가져온다.
+- `GET /api/v1/bootstrap`으로 업종 목록을 조회한다.
+- `GET /api/v1/areas`로 자치구·행정동 목록을, `GET /api/v1/commercial-areas`로 상권 목록을 조회한다.
+- 후보 건물 API가 없으므로 기존 가짜 후보·지도 마커를 제거하고, 필요한 API와 데이터 항목을 화면에 명확히 안내한다.
+- 자치구·행정동 API가 코드만 이름으로 반환하는 현재 백엔드 데이터 상태에서는 해당 코드가 사용자에게 노출되지 않도록 막는다.
+
+### 추가한 API 구조
+
+```text
+src/shared/api/
+  dto/analysisReport.ts          07 보고서 백엔드 DTO
+  adapters/analysisReport.ts     DTO → 화면 데이터 변환
+  analysisReport.ts              POST /analysis-reports
+  useAnalysisReport.ts           보고서 mutation 훅
+  dto/areas.ts                   지역·상권 DTO
+  adapters/areas.ts              DTO → 화면 데이터 변환
+  areas.ts                       지역·상권 조회 함수
+  useAreas.ts                    지역·상권 React Query 훅
+
+src/shared/types/
+  analysisReport.ts              07 보고서 화면 타입
+  areaSelection.ts               지역·상권 선택 타입
+```
+
+### 이번 검증 결과
+
+- `npx tsc --noEmit --incremental false -p tsconfig.app.json` 통과
+- 이번에 변경한 07·12 및 API 파일 대상 ESLint 통과
+- `git diff --check` 통과
+- `/wizard`에서 지역 목록과 실제 `bootstrap` 업종 10개 표시를 브라우저로 확인
+- `npm run build`와 `npx vite build`는 코드 문제가 아니라 `node_modules/.tmp`, `.vite-temp` 파일이 다른 프로세스에 잠긴 Windows `EPERM` 오류로 완료하지 못했다. 개발 서버 또는 에디터가 해당 파일을 사용 중인지 확인한 뒤 다시 실행하면 된다.
 
 ## 이번 작업 완료: 04 창업계산 위저드 + 05 창업계산 결과
 

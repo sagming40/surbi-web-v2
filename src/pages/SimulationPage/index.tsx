@@ -1,129 +1,240 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
-import type { SimulationRequest } from '@/shared/types';
+import { useAreaSelections, useCommercialAreaSelections } from '@/shared/api/useAreas';
+import { useBootstrap } from '@/shared/api/useBootstrap';
 import { Button } from '@/shared/ui/Button';
-import { RankTable } from '@/shared/ui/RankTable';
+import { DataStatusNotice } from '@/shared/ui/DataStatusNotice';
 import { SurbiCard } from '@/shared/ui/SurbiCard';
+import type { AreaSelectionItem } from '@/shared/types';
 import { KakaoMap } from './KakaoMap';
-import {
-  getMockSimulation,
-  mockSimulationCandidates,
-  simulationFilterOptions,
-  type SimulationCandidateRow,
-} from './simulation.mock';
+import type { WizardResultNavigationState } from '../WizardPage/wizard.types';
 
 type FilterMenu = 'gu' | 'dong' | 'category' | 'trdar' | null;
 
-const defaultFilters = {
-  gu: simulationFilterOptions.gu[0],
-  dong: simulationFilterOptions.dong[0],
-  category: simulationFilterOptions.category[0],
-  trdar: simulationFilterOptions.trdar[0],
-};
-
-function FilterButton({ label, active, onClick }: { label: string; active?: boolean; onClick: () => void }) {
-  return <button type="button" onClick={onClick} className={`inline-flex h-8 items-center gap-2 rounded-md border px-3 text-caption font-medium shadow-sm ${active ? 'border-[#3b6ef3] bg-[#3b6ef3] text-white' : 'border-[#d9dee6] bg-white text-[#1e3a5f]'}`}>{label}<span aria-hidden="true" className={active ? 'text-white/80' : 'text-sub'}>⌄</span></button>;
+interface FilterOption {
+  code: string;
+  label: string;
 }
 
+interface SimulationFilters {
+  gu: FilterOption | null;
+  dong: FilterOption | null;
+  category: FilterOption | null;
+  trdar: FilterOption | null;
+}
+
+const emptyFilters: SimulationFilters = {
+  gu: null,
+  dong: null,
+  category: null,
+  trdar: null,
+};
+
+/** 후보 건물 API가 준비되기 전에는 지도 마커 선택을 처리하지 않는다. */
+const ignoreCandidateSelection = () => undefined;
+
+/** 위저드에서 전달된 선택값은 화면을 처음 열 때 필터의 기본값으로만 사용한다. */
+function createInitialFilters(selection: WizardResultNavigationState['selection'] | undefined): SimulationFilters {
+  if (!selection) return emptyFilters;
+
+  return {
+    ...emptyFilters,
+    gu: { code: selection.area.code, label: selection.area.name },
+    category: { code: selection.industry.code, label: selection.industry.name },
+  };
+}
+
+/** 12 창업 시뮬레이션. 실제 API가 있는 필터 정보와 아직 없는 후보 건물 정보를 분리해 표시한다. */
 export default function SimulationPage() {
   const navigate = useNavigate();
-  const [filters, setFilters] = useState(defaultFilters);
-  const [selectedId, setSelectedId] = useState(mockSimulationCandidates[0].id);
+  const location = useLocation();
+  const navigationState = location.state as WizardResultNavigationState | null;
+  const wizardSelection = navigationState?.selection;
+  // 첫 렌더에서만 위저드 선택값을 적용한다. effect 안에서 setState를 호출하지 않아 불필요한 재렌더를 막는다.
+  const [filters, setFilters] = useState<SimulationFilters>(() => createInitialFilters(wizardSelection));
   const [range, setRange] = useState(500);
-  const [sortIndex, setSortIndex] = useState(0);
   const [openMenu, setOpenMenu] = useState<FilterMenu>(null);
-  const [excludeDenseArea, setExcludeDenseArea] = useState(false);
-  const [candidates, setCandidates] = useState<SimulationCandidateRow[]>(mockSimulationCandidates);
-  const [isLoading, setIsLoading] = useState(false);
-  const selectSpot = useCallback((id: string) => setSelectedId(id), []);
-  useEffect(() => {
-    let cancelled = false;
-    const request: SimulationRequest = { guCode: filters.gu.code, categoryCode: filters.category.code, center: { lat: 37.5446, lng: 127.0561 }, radiusM: range, quarter: '2026Q2' };
-    setIsLoading(true);
-    getMockSimulation(request, { excludeDenseArea }).then((response) => {
-      if (cancelled) return;
-      const responseCandidates = response.candidates as SimulationCandidateRow[];
-      setCandidates(responseCandidates);
-      setSelectedId((current) => responseCandidates.some((candidate) => candidate.id === current) ? current : (responseCandidates[0]?.id ?? ''));
-      setIsLoading(false);
+
+  // 실제 백엔드 목록을 각각 캐시한다. 하위 목록은 선택한 자치구 코드를 요청 조건으로 사용한다.
+  const { data: bootstrap, isLoading: isCategoryLoading, isError: isCategoryError } = useBootstrap();
+  const { data: guAreas, isLoading: isGuLoading, isError: isGuError } = useAreaSelections('GU');
+  const { data: dongAreas, isLoading: isDongLoading, isError: isDongError } = useAreaSelections('DONG', filters.gu?.code);
+  const { data: commercialAreas, isLoading: isTrdarLoading, isError: isTrdarError } = useCommercialAreaSelections(
+    filters.gu?.code,
+    filters.dong?.code,
+  );
+
+  const categoryOptions = useMemo<FilterOption[]>(
+    () => bootstrap?.categoryGroups.flatMap((group) => group.items.map((item) => ({
+      code: item.categoryCode,
+      label: item.categoryName,
+    }))) ?? [],
+    [bootstrap],
+  );
+  // 백엔드가 name 대신 code를 보낸 데이터는 사용자에게 코드로 노출하지 않는다.
+  const guOptions = useMemo(() => toReadableOptions(guAreas), [guAreas]);
+  const dongOptions = useMemo(() => toReadableOptions(dongAreas), [dongAreas]);
+  const trdarOptions = useMemo<FilterOption[]>(
+    () => commercialAreas?.filter((item) => item.name !== item.code).map((item) => ({
+      code: item.code,
+      label: item.name,
+    })) ?? [],
+    [commercialAreas],
+  );
+
+  function selectFilter(menu: Exclude<FilterMenu, null>, item: FilterOption) {
+    setFilters((current) => {
+      if (menu === 'gu') return { ...current, gu: item, dong: null, trdar: null };
+      if (menu === 'dong') return { ...current, dong: item, trdar: null };
+      return { ...current, [menu]: item };
     });
-    return () => { cancelled = true; };
-  }, [excludeDenseArea, filters.category.code, filters.gu.code, range]);
-  const list = useMemo(() => [...candidates].sort((a, b) => sortIndex === 0 ? (b.aiScore ?? 0) - (a.aiScore ?? 0) : (a.distanceM ?? 0) - (b.distanceM ?? 0)), [candidates, sortIndex]);
-  const menuOptions = openMenu ? simulationFilterOptions[openMenu] : [];
-  const selectFilter = (menu: Exclude<FilterMenu, null>, item: { code: string; label: string }) => { setFilters((current) => ({ ...current, [menu]: item })); setOpenMenu(null); };
+    setOpenMenu(null);
+  }
 
-  return <main className="min-h-screen overflow-hidden bg-[#edf0ed] text-text">
-    <header className="relative z-30 flex h-14 items-center border-b border-border bg-white px-5 shadow-sm">
-      <button type="button" className="mr-6 text-headline font-extrabold tracking-tight text-navy" onClick={() => navigate('/report')}>Surbi</button>
-      <nav className="relative hidden items-center gap-2 md:flex" aria-label="창업 시뮬레이션 필터">
-        <FilterButton label={filters.gu.label} active={openMenu === 'gu'} onClick={() => setOpenMenu((menu) => menu === 'gu' ? null : 'gu')} />
-        <FilterButton label={filters.dong.label} active={openMenu === 'dong'} onClick={() => setOpenMenu((menu) => menu === 'dong' ? null : 'dong')} />
-        <FilterButton label={filters.category.label} active={openMenu === 'category'} onClick={() => setOpenMenu((menu) => menu === 'category' ? null : 'category')} />
-        <FilterButton label={filters.trdar.label} active={openMenu === 'trdar'} onClick={() => setOpenMenu((menu) => menu === 'trdar' ? null : 'trdar')} />
-        <Button variant="outline" className="!h-8 !rounded-md !px-3 !py-0 !text-caption !font-semibold">범위 그리기</Button>
-        {openMenu && <SurbiCard className="absolute left-0 top-10 z-40 w-40 overflow-hidden rounded-md p-1 shadow-lg">
-          {menuOptions.map((item) => <button key={item.code} type="button" onClick={() => selectFilter(openMenu, item)} className="flex w-full rounded px-3 py-2 text-left text-caption text-text hover:bg-[#f1f5fe] hover:text-blue">{item.label}</button>)}
-        </SurbiCard>}
-      </nav>
-      <button type="button" className="ml-auto text-caption text-sub" onClick={() => { setFilters(defaultFilters); setSelectedId(mockSimulationCandidates[0].id); setRange(500); setExcludeDenseArea(false); setSortIndex(0); setOpenMenu(null); }}>초기화</button>
-    </header>
-    <section className="relative h-[calc(100vh-3.5rem)] min-h-[650px] overflow-hidden">
-      <KakaoMap candidates={candidates} rangeM={range} selectedId={selectedId} onSelect={selectSpot} />
-      <SurbiCard className="absolute left-1 top-1 z-20 h-[543px] w-[404px] overflow-hidden rounded-[10px] p-0 shadow-lg">
-        <div className="flex h-[70px] items-center px-[18px]">
-          <div>
-            <h1 className="text-body font-bold text-navy">창업 시뮬레이션</h1>
-            <p className="mt-1 text-label text-sub">{filters.trdar.label} · {filters.category.label} 기준</p>
+  function resetFilters() {
+    setFilters(emptyFilters);
+    setRange(500);
+    setOpenMenu(null);
+  }
+
+  const menuOptions = openMenu === 'gu'
+    ? guOptions
+    : openMenu === 'dong'
+      ? dongOptions
+      : openMenu === 'category'
+        ? categoryOptions
+        : openMenu === 'trdar'
+          ? trdarOptions
+          : [];
+  const loadingMenu = openMenu === 'gu'
+    ? isGuLoading
+    : openMenu === 'dong'
+      ? isDongLoading
+      : openMenu === 'category'
+        ? isCategoryLoading
+        : openMenu === 'trdar'
+          ? isTrdarLoading
+          : false;
+  const currentScope = filters.trdar?.label ?? filters.dong?.label ?? filters.gu?.label ?? '지역 선택 전';
+
+  return (
+    <main className="min-h-screen overflow-hidden bg-[#edf0ed] text-text">
+      <header className="relative z-30 flex h-14 items-center border-b border-border bg-white px-5 shadow-sm">
+        <button type="button" className="mr-6 text-headline font-extrabold tracking-tight text-navy" onClick={() => navigate('/report', { state: navigationState })}>
+          Surbi
+        </button>
+        <nav className="relative hidden items-center gap-2 md:flex" aria-label="창업 시뮬레이션 필터">
+          <FilterButton label={filters.gu?.label ?? '자치구'} active={openMenu === 'gu'} onClick={() => setOpenMenu((menu) => menu === 'gu' ? null : 'gu')} />
+          <FilterButton label={filters.dong?.label ?? '행정동'} active={openMenu === 'dong'} disabled={!filters.gu} onClick={() => setOpenMenu((menu) => menu === 'dong' ? null : 'dong')} />
+          <FilterButton label={filters.category?.label ?? '업종'} active={openMenu === 'category'} onClick={() => setOpenMenu((menu) => menu === 'category' ? null : 'category')} />
+          <FilterButton label={filters.trdar?.label ?? '상권'} active={openMenu === 'trdar'} disabled={!filters.gu} onClick={() => setOpenMenu((menu) => menu === 'trdar' ? null : 'trdar')} />
+          <Button variant="outline" className="!h-8 !rounded-md !px-3 !py-0 !text-caption !font-semibold" disabled>
+            범위 그리기 준비 중
+          </Button>
+          {openMenu && (
+            <FilterMenuList
+              options={menuOptions}
+              loading={loadingMenu}
+              onSelect={(item) => selectFilter(openMenu, item)}
+            />
+          )}
+        </nav>
+        <button type="button" className="ml-auto text-caption text-sub" onClick={resetFilters}>초기화</button>
+      </header>
+
+      <section className="relative h-[calc(100vh-3.5rem)] min-h-[650px] overflow-hidden">
+        {/* 후보 건물 API가 없으므로 지도에는 실제 카카오맵과 반경만 표시하고 가짜 마커는 만들지 않는다. */}
+        <KakaoMap candidates={[]} rangeM={range} selectedId="" onSelect={ignoreCandidateSelection} />
+
+        <SurbiCard className="absolute left-1 top-1 z-20 w-[404px] overflow-hidden rounded-[10px] p-0 shadow-lg">
+          <div className="flex min-h-[70px] items-center px-[18px]">
+            <div>
+              <h1 className="text-body font-bold text-navy">창업 시뮬레이션</h1>
+              <p className="mt-1 text-label text-sub">{currentScope} · {filters.category?.label ?? '업종 선택 전'} 기준</p>
+            </div>
           </div>
-        </div>
 
-        <div className="h-[119px] bg-[#f9fafc] px-[18px] pt-3">
-          <div className="flex items-center justify-between text-caption text-sub">
-            <span>탐색 반경</span>
-            <strong className="font-semibold text-blue">{range}m</strong>
+          <div className="bg-[#f9fafc] px-[18px] py-3">
+            <div className="flex items-center justify-between text-caption text-sub">
+              <span>탐색 반경</span>
+              <strong className="font-semibold text-blue">{range}m</strong>
+            </div>
+            <input
+              type="range"
+              min="100"
+              max="1000"
+              step="100"
+              value={range}
+              onChange={(event) => setRange(Number(event.target.value))}
+              className="mt-3 block h-[5px] w-full cursor-pointer accent-blue"
+              aria-label="탐색 반경"
+            />
+            <div className="mt-2 flex justify-between text-label text-sub"><span>100m</span><span>300m</span><span>500m</span><span>1km</span></div>
           </div>
-          <input
-            type="range"
-            min="100"
-            max="1000"
-            step="100"
-            value={range}
-            onChange={(event) => setRange(Number(event.target.value))}
-            className="mt-3 block h-[5px] w-full cursor-pointer accent-blue"
-            aria-label="탐색 반경"
-          />
-          <div className="mt-2 flex justify-between text-label text-sub"><span>100m</span><span>300m</span><span>500m</span><span>1km</span></div>
-          <button type="button" role="switch" aria-checked={excludeDenseArea} onClick={() => setExcludeDenseArea((value) => !value)} className="mt-3 flex w-full items-center justify-between text-left text-caption text-text">
-            <span>반경 내 경쟁 매장이 밀집한 곳 제외</span>
-            <span className={`relative h-[18px] w-8 rounded-full transition-colors ${excludeDenseArea ? 'bg-blue' : 'bg-[#d9dee6]'}`}><span className={`absolute top-0.5 h-[14px] w-[14px] rounded-full bg-white shadow-sm transition-transform ${excludeDenseArea ? 'translate-x-[14px]' : 'translate-x-0.5'}`} /></span>
-          </button>
-        </div>
 
-        <div className="flex h-[40px] items-center justify-between bg-[#f1f5fe] px-[18px]">
-          <p className="text-caption font-semibold text-[#1e3a5f]">조건을 만족하는 건물 {candidates.length}곳</p>
-          <button type="button" onClick={() => setSortIndex((value) => value === 0 ? 1 : 0)} className="text-label font-semibold text-blue">{sortIndex === 0 ? '점수순' : '거리순'}⌄</button>
-        </div>
-        <div className="h-[272px] overflow-hidden">
-          <RankTable
-            rows={list.slice(0, 6)}
-            loading={isLoading}
-            isHighlighted={(spot) => spot.id === selectedId}
-            onRowClick={(spot) => selectSpot(spot.id)}
-            columns={[
-              { header: '순위', width: 'w-8', render: (_, index) => <span className={`text-caption font-semibold ${index < 3 ? 'text-blue' : 'text-sub'}`}>{index + 1}</span> },
-              { header: '건물', render: (spot) => <span className="block truncate text-caption font-medium text-text">{spot.name}</span> },
-              { header: '최근접 경쟁', width: 'w-16', align: 'right', render: (spot) => <span className="text-label text-sub">{spot.distanceM ?? '-'}m</span> },
-              { header: '점수', width: 'w-8', align: 'right', render: (spot, index) => <span className={`text-caption font-bold ${index < 2 ? 'text-[#00a875]' : 'text-[#1e3a5f]'}`}>{spot.aiScore ?? '-'}</span> },
-            ]}
-          />
-        </div>
-        <div className="flex h-[42px] items-center justify-between bg-[#f9fafc] px-[18px]">
-          <p className="text-label text-sub">건물을 고르면 창업 준비 체크리스트로 이어집니다</p>
-          <button type="button" className="text-body text-sub" aria-label="후보 건물 더 보기">→</button>
-        </div>
-      </SurbiCard>
-    </section>
-  </main>;
+          <div className="space-y-3 px-[18px] py-4">
+            {(isCategoryError || isGuError || isDongError || isTrdarError) && (
+              <DataStatusNotice status="unavailable">
+                필터 정보를 불러오지 못했습니다. 백엔드가 실행 중인지 확인해 주세요.
+              </DataStatusNotice>
+            )}
+            {guAreas && guAreas.length > 0 && guOptions.length === 0 && (
+              <DataStatusNotice status="temporary">
+                자치구 API가 현재 이름 대신 코드만 제공하고 있어, 지역 선택은 데이터 수정 후 활성화됩니다.
+              </DataStatusNotice>
+            )}
+            <DataStatusNotice status="unavailable">
+              조건을 만족하는 후보 건물, 경쟁 매장 수, 예상 매출, 임대료, AI 점수 API는 아직 백엔드에 없습니다. 실제 후보 건물 API가 준비되면 이 영역과 지도 마커를 연결합니다.
+            </DataStatusNotice>
+          </div>
+        </SurbiCard>
+      </section>
+    </main>
+  );
+}
+
+/** 코드만 name으로 내려오는 미완성 데이터를 필터 선택지에서 제외한다. */
+function toReadableOptions(items: AreaSelectionItem[] | undefined): FilterOption[] {
+  return items?.filter((item) => item.name !== item.code).map((item) => ({
+    code: item.code,
+    label: item.name,
+  })) ?? [];
+}
+
+function FilterButton({
+  label,
+  active,
+  disabled = false,
+  onClick,
+}: {
+  label: string;
+  active?: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`inline-flex h-8 items-center gap-2 rounded-md border px-3 text-caption font-medium shadow-sm ${active ? 'border-blue bg-blue text-white' : 'border-[#d9dee6] bg-white text-navy'} disabled:cursor-not-allowed disabled:opacity-45`}
+    >
+      {label}<span aria-hidden="true" className={active ? 'text-white/80' : 'text-sub'}>⌄</span>
+    </button>
+  );
+}
+
+function FilterMenuList({ options, loading, onSelect }: { options: FilterOption[]; loading: boolean; onSelect: (item: FilterOption) => void }) {
+  return (
+    <SurbiCard className="absolute left-0 top-10 z-40 w-48 overflow-hidden rounded-md p-1 shadow-lg">
+      {loading && <p className="px-3 py-2 text-caption text-sub">목록을 불러오는 중입니다.</p>}
+      {!loading && options.length === 0 && <p className="px-3 py-2 text-caption text-sub">표시할 데이터가 없습니다.</p>}
+      {options.map((item) => (
+        <button key={item.code} type="button" onClick={() => onSelect(item)} className="flex w-full rounded px-3 py-2 text-left text-caption text-text hover:bg-[#f1f5fe] hover:text-blue">
+          {item.label}
+        </button>
+      ))}
+    </SurbiCard>
+  );
 }
