@@ -4,7 +4,7 @@
 
 - 작업 브랜치: `feature/wizard-api`
 - 이번 작업 시작 기준 HEAD: `1ae7fbd feat: 04-05 창업 분석 API 연동`
-- 아래 07·12 API 연동 변경은 이 문서를 작성하는 시점에는 아직 commit/push하지 않았다.
+- 07·12 API 연동은 `0f2966b feat: 07-12 보고서·시뮬레이션 API 연동`으로 commit/push되었다.
 - `main`에는 직접 commit/push하지 않는다.
 - 팀원의 `feature/shared-api`는 이미 현재 브랜치에 병합되어 있다.
 
