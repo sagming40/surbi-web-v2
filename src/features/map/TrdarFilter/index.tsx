@@ -1,15 +1,16 @@
 import { SurbiCard } from '@/shared/ui/SurbiCard';
-import { TRDAR_TYPES } from '../mock/categories';
 
 interface TrdarFilterProps {
   /** 지도에 표시할 상권 구분 코드들 */
   value: string[];
   onChange: (codes: string[]) => void;
   onClose: () => void;
+  types: string[];
+  needsGu: boolean;
 }
 
 /** 상권영역 표시 설정. 레이어 스위치라 업종과 달리 다중 선택 */
-export function TrdarFilter({ value, onChange, onClose }: TrdarFilterProps) {
+export function TrdarFilter({ value, onChange, onClose, types, needsGu }: TrdarFilterProps) {
   const toggle = (code: string) =>
     onChange(value.includes(code) ? value.filter((c) => c !== code) : [...value, code]);
 
@@ -26,27 +27,26 @@ export function TrdarFilter({ value, onChange, onClose }: TrdarFilterProps) {
           ✕
         </button>
       </div>
+      {needsGu && <p className="px-4 pb-1 text-caption text-sub">자치구를 먼저 선택해주세요</p>}
 
-      {TRDAR_TYPES.map((t) => {
-        const on = value.includes(t.code);
+      {types.map((type) => {
+        const on = value.includes(type);
         return (
           <button
-            key={t.code}
+            key={type}
             type="button"
             aria-pressed={on}
-            onClick={() => toggle(t.code)}
-            className={`flex w-full items-center gap-2 px-4 py-2 text-left text-caption ${
-              on ? 'font-bold text-blue' : 'text-sub hover:bg-surface'
-            }`}
+            onClick={() => toggle(type)}
+            className={`flex w-full items-center gap-2 px-4 py-2 text-left text-caption ${on ? 'font-bold text-blue' : 'text-sub hover:bg-surface'
+              }`}
           >
             <span
-              className={`grid h-3.5 w-3.5 shrink-0 place-items-center rounded border text-[9px] ${
-                on ? 'border-blue bg-blue text-white' : 'border-border'
-              }`}
+              className={`grid h-3.5 w-3.5 shrink-0 place-items-center rounded border text-[9px] ${on ? 'border-blue bg-blue text-white' : 'border-border'
+                }`}
             >
               {on ? '✓' : ''}
             </span>
-            {t.name}
+            {type}
           </button>
         );
       })}
