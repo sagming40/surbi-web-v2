@@ -24,10 +24,16 @@ export interface DashboardResponse extends QuarterScoped {
   kpi: DashboardKpi;
   /** 점포당 평균 추정매출 */
   avgSalesPerStore: number | null;
-  /** 최근 8개 분기 매출 추이 */
+  /**
+   * 분기별 점포당 평균 매출 추이 (최근 최대 8개 분기, 오래된 분기부터).
+   * 필드 이름은 sales지만 값은 총매출이 아니라 점포당 평균이다.
+   */
   salesTrend: DashboardTrendPoint[];
   districtHeatmap: DistrictHeatmapItem[];
-  categoryAvgSales: CategoryAvgSales[];
+  /** @deprecated 백엔드에 업종별 직전 분기 점포 수가 없어 현재 미사용. categorySales 사용 */
+  categoryAvgSales?: CategoryAvgSales[];
+  /** 외식업 10종의 현재·직전 분기 총매출 비교 */
+  categorySales: CategorySalesCompare[]
   districtTop10: DistrictTop10Item[];
   kpiChangeRate: Record<keyof DashboardKpi, number | null>;
   avgSalesPerStoreChangeRate: number | null;
@@ -61,6 +67,18 @@ export interface CategoryAvgSales {
   groupCode: string;
   groupName: string;
   avgSalesPerStore: number;
+}
+
+/**
+ * 업종별 현재·직전 분기 총매출 비교 항목.
+ * 점포당 평균이 아니라 총매출이다 (백엔드가 직전 분기 점포 수를 주지 않음).
+ */
+export interface CategorySalesCompare {
+  groupCode: string;
+  groupName: string;
+  sales: number | null;
+  previousSales: number | null;
+  changeRate: number | null;
 }
 
 export interface DistrictTop10Item {
