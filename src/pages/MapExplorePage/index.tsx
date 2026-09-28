@@ -9,9 +9,9 @@ import { MapSideMenu, type MapTool } from '@/features/map/MapSideMenu';
 import { CategoryFilter } from '@/features/map/CategoryFilter';
 import { TrdarFilter } from '@/features/map/TrdarFilter';
 import { findCategory } from '@/features/map/mock/categories';
-import { getDongMock } from '@/features/map/mock/seoulDongMock';
 import { useSeoulMap } from '@/shared/api/useSeoulMap';
-import { useDistrictGeos, useSeoulOutline } from '@/shared/api/useMapAreas';
+import { useDistrictGeos, useDongGeos, useSeoulOutline } from '@/shared/api/useMapAreas';
+import { useDistrictMap } from '@/shared/api/useDistrictMap';
 
 /** 01 지도 탐색. 헤더 아래를 지도가 채우고 패널들은 그 위에 absolute 로 얹는다 */
 export default function MapExplorePage() {
@@ -38,23 +38,36 @@ export default function MapExplorePage() {
   // 경계선. 기본값(= [])을 주지 않는다 — 렌더마다 새 배열이 생겨 폴리곤을 계속 다시 그리게 된다
   const { data: outline } = useSeoulOutline();
   const { data: districts } = useDistrictGeos();
+  const { data: dongs } = useDongGeos(guCode);
 
   // 폴리곤을 그리고, 선택이 바뀌면 그쪽으로 이동·확대한다
   usePolygonLayer(map, {
     outline,
     districts,
+    dongs,
     guCode,
     dongCode,
     onSelectGu: selectGu,
     onSelectDong: selectDong,
   });
-  useFitSelection(map, { outline, districts, guCode, dongCode, drawerOpen: isDongReportOpen });
+  useFitSelection(map, { outline, districts, dongs, guCode, dongCode, drawerOpen: isDongReportOpen });
 
   /**
    * 자치구를 고르기 전에는 자치구 25개(01), 고른 뒤에는 그 구의 행정동(01b).
    * 두 응답의 행이 RankingMetrics 를 공유해서 같은 패널로 그릴 수 있다.
    */
-  const dongData = guCode ? getDongMock(guCode) : null;
+  // 필터 목록은 01 응답에 담긴 자치구를 그대로 쓴다 — 별도 조회가 필요 없다
+  const guOptions = useMemo(
+    () =>
+      (seoulMap?.districtRanking ?? [])
+        .map((d) => ({ value: d.guCode, label: d.guName }))
+        .sort((a, b) => a.label.localeCompare(b.label, 'ko')),
+    [seoulMap],
+  );
+  
+  const guName = guOptions.find((o) => o.value === guCode)?.label;
+  
+  const { data: dongData } = useDistrictMap(guCode, guName);
 
   const panel = useMemo(() => {
     if (dongData) {
@@ -73,21 +86,11 @@ export default function MapExplorePage() {
     return { rows, unitLabel: '자치구', quarter: seoulMap?.quarter ?? '' };
   }, [dongData, seoulMap]);
 
-  // 필터 목록은 01 응답에 담긴 자치구를 그대로 쓴다 — 별도 조회가 필요 없다
-  const guOptions = useMemo(
-    () =>
-      (seoulMap?.districtRanking ?? [])
-        .map((d) => ({ value: d.guCode, label: d.guName }))
-        .sort((a, b) => a.label.localeCompare(b.label, 'ko')),
-    [dongData, seoulMap],
-  );
-
   const dongOptions = useMemo(
     () => dongData?.dongRanking.map((d) => ({ value: d.dongCode, label: d.dongName })) ?? [],
     [dongData],
   );
 
-  const guName = guOptions.find((o) => o.value === guCode)?.label;
   const selectedDong = useMemo(
     () => dongData?.dongRanking.find((dong) => dong.dongCode === dongCode) ?? null,
     [dongCode, dongData],
@@ -155,9 +158,8 @@ export default function MapExplorePage() {
 
         {/* 우측 플로팅 메뉴와 원격 브랜치의 업종·상권영역 필터 */}
         <div
-          className={`pointer-events-none absolute top-4 z-10 flex items-start gap-2 transition-[right] ${
-            isDongReportOpen ? 'right-[404px]' : 'right-4'
-          }`}
+          className={`pointer-events-none absolute top-4 z-10 flex items-start gap-2 transition-[right] ${isDongReportOpen ? 'right-[404px]' : 'right-4'
+            }`}
         >
           {activeTool === 'trdar' && (
             <TrdarFilter
