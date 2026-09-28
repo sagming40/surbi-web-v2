@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
-import type { GeoJsonGeometry } from '@/shared/types/common';
-import type { DistrictGeo, DongGeo } from '@/shared/types/map';
+import type { GeoJsonGeometry, LatLng } from '@/shared/types/common';
+import type { DistrictGeo, DongGeo, TrdarGeo } from '@/shared/types/map';
 import { getKakao } from './useKakaoMap';
+import { TRDAR_COLORS, TRDAR_FALLBACK, TRDAR_LABELED_TYPES } from './trdarStyle';
 
 /** 지도 배경이 알록달록해서 테두리는 진하게, 채움은 옅게 간다 */
 const STYLE = {
@@ -67,6 +68,37 @@ function createTooltip(kakao: any, map: any) {
       overlay.setMap(null);
     },
   };
+}
+
+/**
+ * 지도에 고정으로 떠 있는 이름 라벨. 툴팁과 달리 마우스를 따라다니지 않는다.
+ * setMap(null) 로 지울 수 있어서 폴리곤과 같은 drawn 배열에 넣어 정리한다.
+ */
+function createAreaLabel(kakao: any, map: any, text: string, center: LatLng, color: string) {
+  const el = document.createElement('div');
+  el.textContent = text;
+  Object.assign(el.style, {
+    padding: '3px 8px',
+    borderRadius: '6px',
+    background: color,
+    color: '#fff',
+    fontFamily: 'Noto Sans KR, sans-serif',
+    fontSize: '12px',
+    fontWeight: '700',
+    whiteSpace: 'nowrap',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+    // 라벨이 아래 행정동 폴리곤의 클릭·hover 를 막지 않게 한다
+    pointerEvents: 'none',
+  });
+
+  const overlay = new kakao.maps.CustomOverlay({
+    content: el,
+    position: new kakao.maps.LatLng(center.lat, center.lng),
+    yAnchor: 0.5,
+    zIndex: 6,
+  });
+  overlay.setMap(map);
+  return overlay;
 }
 
 interface PolygonLayerOptions {
@@ -300,4 +332,46 @@ export function useFitSelection(map: any, options: FitSelectionOptions) {
     map.setLevel(level);
     centerInVisibleArea(map, kakao, boundsOf(kakao, target.geometry), pad);
   }, [map, outline, districts, dongs, guCode, dongCode, drawerOpen]);
+}
+
+export function useCommercialAreaLayer(
+  map: any,
+  options: { areas: TrdarGeo[] | undefined; visibleTypes: string[] },
+) {
+  const { areas, visibleTypes } = options;
+
+  useEffect(() => {
+    const kakao = getKakao();
+    if (!map || !kakao) return;
+
+    const drawn: any[] = [];
+
+    (areas ?? [])
+      .filter((a) => visibleTypes.includes(a.trdarTypeName))
+      .forEach((a) => {
+        const color = TRDAR_COLORS[a.trdarTypeName] ?? TRDAR_FALLBACK;
+
+        drawn.push(
+          ...drawPolygons(kakao, map, a.geometry, {
+            strokeWeight: 2,
+            strokeColor: color.stroke,
+            strokeOpacity: 0.9,
+            strokeStyle: 'shortdash',
+            fillColor: color.fill,
+            fillOpacity: 0.35,
+            // 행정동(4~5)보다 아래에 둬야 상권이 행정동 클릭을 가로채지 않는다
+            zIndex: 2,
+          }),
+        );
+
+        // 관광특구처럼 수가 적은 유형만 이름을 띄운다. 중심점이 없으면 건너뛴다
+        if (TRDAR_LABELED_TYPES.includes(a.trdarTypeName) && a.center) {
+          drawn.push(createAreaLabel(kakao, map, a.trdarName, a.center, color.stroke));
+        }
+      });
+
+    return () => {
+      drawn.forEach((p) => p.setMap(null));
+    };
+  }, [map, areas, visibleTypes]);
 }

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { TopNav } from '@/shared/ui/TopNav';
 import { useKakaoMap } from '@/features/map/useKakaoMap';
 import { useMapScope, SCOPE_LABEL } from '@/features/map/mapScope';
-import { usePolygonLayer, useFitSelection } from '@/features/map/usePolygonLayer';
+import { usePolygonLayer, useFitSelection, useCommercialAreaLayer } from '@/features/map/usePolygonLayer';
 import { RankingPanel, type RankingRow } from '@/features/map/RankingPanel';
 import { DongReportDrawer } from '@/features/map/DongReportDrawer';
 import { MapSideMenu, type MapTool } from '@/features/map/MapSideMenu';
@@ -10,8 +10,9 @@ import { CategoryFilter } from '@/features/map/CategoryFilter';
 import { TrdarFilter } from '@/features/map/TrdarFilter';
 import { findCategory } from '@/features/map/mock/categories';
 import { useSeoulMap } from '@/shared/api/useSeoulMap';
-import { useDistrictGeos, useDongGeos, useSeoulOutline } from '@/shared/api/useMapAreas';
+import { useCommercialAreas, useDistrictGeos, useDongGeos, useSeoulOutline } from '@/shared/api/useMapAreas';
 import { useDistrictMap } from '@/shared/api/useDistrictMap';
+import { useBootstrap } from '@/shared/api/useBootstrap';
 
 /** 01 지도 탐색. 헤더 아래를 지도가 채우고 패널들은 그 위에 absolute 로 얹는다 */
 export default function MapExplorePage() {
@@ -39,6 +40,9 @@ export default function MapExplorePage() {
   const { data: outline } = useSeoulOutline();
   const { data: districts } = useDistrictGeos();
   const { data: dongs } = useDongGeos(guCode);
+  // 상권은 구를 고른 뒤 그 구 것만 받고, 유형 필터는 화면에서 거른다
+  const { data: commercialAreas } = useCommercialAreas(guCode);
+  useCommercialAreaLayer(map, { areas: commercialAreas, visibleTypes: trdarTypes });
 
   // 폴리곤을 그리고, 선택이 바뀌면 그쪽으로 이동·확대한다
   usePolygonLayer(map, {
@@ -70,13 +74,13 @@ export default function MapExplorePage() {
   const { data: dongData } = useDistrictMap(guCode, guName);
 
   const panel = useMemo(() => {
-    if (dongData) {
-      const rows: RankingRow[] = dongData.dongRanking.map((d) => ({
+    if (guCode) {
+      const rows: RankingRow[] = (dongData?.dongRanking ?? []).map((d) => ({
         ...d,
         code: d.dongCode,
         name: d.dongName,
       }));
-      return { rows, unitLabel: '행정동', quarter: dongData.quarter };
+      return { rows, unitLabel: '행정동', quarter: dongData?.quarter ?? seoulMap?.quarter ?? '' };
     }
     const rows: RankingRow[] = (seoulMap?.districtRanking ?? []).map((d) => ({
       ...d,
@@ -84,7 +88,7 @@ export default function MapExplorePage() {
       name: d.guName,
     }));
     return { rows, unitLabel: '자치구', quarter: seoulMap?.quarter ?? '' };
-  }, [dongData, seoulMap]);
+  }, [guCode, dongData, seoulMap]);
 
   const dongOptions = useMemo(
     () => dongData?.dongRanking.map((d) => ({ value: d.dongCode, label: d.dongName })) ?? [],
@@ -95,6 +99,8 @@ export default function MapExplorePage() {
     () => dongData?.dongRanking.find((dong) => dong.dongCode === dongCode) ?? null,
     [dongCode, dongData],
   );
+
+  const { data: bootstrap } = useBootstrap();
 
   /** 지도 폴리곤과 좌측 랭킹 패널이 공통으로 쓰는 행정동 선택 동작이다. */
   function selectDong(code: string | null) {
@@ -166,6 +172,8 @@ export default function MapExplorePage() {
               value={trdarTypes}
               onChange={setTrdarTypes}
               onClose={() => setActiveTool(null)}
+              types={bootstrap?.commercialAreaTypes ?? []}
+              needsGu={guCode === null}
             />
           )}
           {activeTool === 'category' && (
