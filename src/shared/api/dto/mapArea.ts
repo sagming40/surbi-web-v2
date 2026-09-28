@@ -8,6 +8,7 @@ export interface MapAreaPropertiesDto {
   /** C-009 재적재 전에는 code와 같은 값이 올 수 있다 */
   name: string;
   category_name: string | null;
+  type: string | null;
   signgu_code: string | null;
   dong_code: string | null;
   center: { latitude: number | null; longitude: number | null; available: boolean };

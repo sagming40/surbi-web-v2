@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { getDistrictGeos, getDongGeos, getSeoulOutline } from './mapArea';
+import { getCommercialAreas, getDistrictGeos, getDongGeos, getSeoulOutline } from './mapArea';
 
 // 경계선은 통계와 달리 거의 바뀌지 않아서 앱 실행 중 한 번만 받는다
 export function useDistrictGeos() {
@@ -22,6 +22,15 @@ export function useDongGeos(guCode: string | null) {
   return useQuery({
     queryKey: ['mapAreas', 'DONG', guCode],
     queryFn: () => getDongGeos(guCode!),
+    enabled: guCode !== null,
+    staleTime: Infinity,
+  });
+}
+
+export function useCommercialAreas(guCode: string | null) {
+  return useQuery({
+    queryKey: ['mapAreas', 'COMMERCIAL_AREA', guCode],
+    queryFn: () => getCommercialAreas(guCode!),
     enabled: guCode !== null,
     staleTime: Infinity,
   });
