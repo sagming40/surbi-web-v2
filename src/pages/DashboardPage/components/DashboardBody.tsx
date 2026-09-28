@@ -4,10 +4,12 @@ import { AvgSalesCard } from './AvgSalesCard';
 import { DistrictTileGrid } from './DistrictTileGrid';
 import { DistrictTop10 } from './DistrictTop10';
 import { KpiRow } from './KpiRow';
-import { PLACEHOLDER_CATEGORY, PLACEHOLDER_CATEGORY_PREV, PLACEHOLDER_TREND } from '../placeholders';
+import { PLACEHOLDER_CATEGORY, PLACEHOLDER_TREND } from '../placeholders';
 import { QuarterlyTrend } from './QuarterlyTrend';
 import type { DashboardResponse } from '@/shared/types/dashboard';
 import { CategoryCompare } from './CategoryCompare';
+import { ChartFallback } from './ChartFallback';
+import { formatQuarter } from '@/shared/lib/format';
 
 interface DashboardBodyProps {
   data: DashboardResponse;
@@ -26,6 +28,13 @@ export function DashboardBody({ data }: DashboardBodyProps) {
     ...d,
     guName: GU_NAME_BY_CODE.get(d.guCode) ?? d.guCode,
   }));
+
+  const hasTrend = data.salesTrend.some((d) => d.sales !== null);
+  const hasCategory = data.categorySales.some((d) => d.sales !== null || d.previousSales !== null);
+
+  const currentLabel = formatQuarter(data.quarter);
+  const prevQuarter = data.salesTrend.at(-2)?.quarter;
+  const previousLabel = prevQuarter ? formatQuarter(prevQuarter) : '직전 분기';
 
   return (
     <div className="grid grid-cols-[480px_1fr] gap-12 px-10 py-6">
@@ -50,28 +59,26 @@ export function DashboardBody({ data }: DashboardBodyProps) {
 
       <main className="flex flex-col gap-20 self-start">
         <KpiRow kpi={data.kpi} changeRate={data.kpiChangeRate} />
-
-        <div className="relative">
-          <div className="blur-sm opacity-60 pointer-events-none select-none" aria-hidden>
+        {hasTrend
+          ? <QuarterlyTrend items={data.salesTrend} />
+          : <ChartFallback message="점포당 평균 추정매출 추이 데이터가 없습니다">
             <QuarterlyTrend items={PLACEHOLDER_TREND} />
-          </div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <p className="text-title font-bold text-text">분기별 매출 추이 데이터가 없습니다</p>
-          </div>
-        </div>
-        <div className="relative">
-          <div className="blur-sm opacity-60 pointer-events-none select-none" aria-hidden>
-            <CategoryCompare
-            current={PLACEHOLDER_CATEGORY}
-            previous={PLACEHOLDER_CATEGORY_PREV}
-            currentLabel="2026년 1분기"
-            previousLabel="2025년 4분기"
+          </ChartFallback>
+        }
+        {hasCategory
+          ? <CategoryCompare
+            items={data.categorySales}
+            currentLabel={currentLabel}
+            previousLabel={previousLabel}
             />
-          </div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <p className="text-title font-bold text-text">분기별 매출 추이 데이터가 없습니다</p>
-          </div>
-        </div>
+          : <ChartFallback message="업종별 매출액 데이터가 없습니다">
+            <CategoryCompare
+              items={PLACEHOLDER_CATEGORY}
+              currentLabel={currentLabel}
+              previousLabel={previousLabel}
+            />
+          </ChartFallback>
+        }
       </main>
 
     </div>

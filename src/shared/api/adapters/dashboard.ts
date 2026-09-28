@@ -1,16 +1,10 @@
 import type { DashboardResponseDto } from '../dto/dashboard';
 import type { DashboardResponse } from '@/shared/types';
-import { calcChangeRate, pickMetric, toQuarter } from '../convert';
+import { pickMetric, toQuarter } from '../convert';
 
 export function toDashboard(dto: DashboardResponseDto): DashboardResponse {
   if (!dto.meta.period) throw new Error('dashboard 응답에 기준 분기(meta.period)가 없습니다');
 
-  const prevSales = pickMetric(dto.previous_sales);
-  const prevStores = pickMetric(dto.previous_store_count);
-  const prevAvg =
-    prevSales === null || prevStores === null || prevStores === 0
-      ? null
-      : prevSales / prevStores;
   const avgSales = pickMetric(dto.average_sales_per_store);
 
   return {
@@ -29,7 +23,7 @@ export function toDashboard(dto: DashboardResponseDto): DashboardResponse {
       closureRate: null,
     },
     avgSalesPerStore: avgSales,
-    avgSalesPerStoreChangeRate: calcChangeRate(avgSales, prevAvg),
+    avgSalesPerStoreChangeRate: dto.average_sales_per_store_change_rate,
     dongCount: dto.dong_count,
     districtHeatmap: dto.gu_sales_distribution.map((item) => ({
       guCode: item.area.code,
@@ -46,7 +40,16 @@ export function toDashboard(dto: DashboardResponseDto): DashboardResponse {
         changeRate: item.change_rate,
       };
     }),
-    salesTrend: [],
-    categoryAvgSales: [],
+    salesTrend: dto.average_sales_per_store_trend.map((item) => ({
+      quarter: toQuarter(item.period.code),
+      sales: item.average_sales_per_store,
+    })),
+    categorySales: dto.top_industries_by_sales.map((item) => ({
+      groupCode: item.industry.code,
+      groupName: item.industry.name,
+      sales: item.sales,
+      previousSales: item.previous_sales,
+      changeRate: item.sales_change_rate,
+    })),
   };
 }
