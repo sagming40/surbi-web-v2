@@ -25,15 +25,3 @@ export const FOOD_CATEGORIES: FoodCategory[] = [
 export function findCategory(code: string | null): FoodCategory | undefined {
   return FOOD_CATEGORIES.find((c) => c.code === code);
 }
-
-/** 상권 구분 3종. ⚠️ 이름은 확정, code(TRDAR_SE_CD)는 임시값 */
-export interface TrdarType {
-  code: string;
-  name: string;
-}
-
-export const TRDAR_TYPES: TrdarType[] = [
-  { code: 'D', name: '발달상권' },
-  { code: 'A', name: '골목상권' },
-  { code: 'R', name: '전통시장' },
-];

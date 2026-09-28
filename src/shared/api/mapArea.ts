@@ -1,7 +1,7 @@
 import { apiClient } from './client';
-import { toDistrictGeos, toSeoulOutline } from './adapters/mapArea';
+import { toDistrictGeos, toDongGeos, toSeoulOutline, toTrdarGeos } from './adapters/mapArea';
 import type { MapAreaFeatureCollectionDto } from './dto/mapArea';
-import type { DistrictGeo, GeoJsonGeometry } from '@/shared/types';
+import type { DistrictGeo, DongGeo, GeoJsonGeometry, TrdarGeo } from '@/shared/types';
 
 /** 자치구 경계 25개. 원본 좌표라 응답이 크다(약 1.5MB) — 훅에서 한 번만 받는다 */
 export async function getDistrictGeos(): Promise<DistrictGeo[]> {
@@ -17,4 +17,18 @@ export async function getSeoulOutline(): Promise<GeoJsonGeometry> {
     params: { unit: 'SEOUL' },
   });
   return toSeoulOutline(response.data);
+}
+
+export async function getDongGeos(guCode: string): Promise<DongGeo[]> {
+  const response = await apiClient.get<MapAreaFeatureCollectionDto>('/map/areas', {
+    params: { unit: 'DONG', parent_code: guCode },
+  });
+  return toDongGeos(response.data);
+}
+
+export async function getCommercialAreas(guCode: string): Promise<TrdarGeo[]> {
+  const response = await apiClient.get<MapAreaFeatureCollectionDto>('/map/areas', {
+    params: { unit: 'COMMERCIAL_AREA', gu_code: guCode },
+  });
+  return toTrdarGeos(response.data);
 }

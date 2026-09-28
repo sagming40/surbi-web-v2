@@ -46,7 +46,7 @@ export interface DongGeo {
   dongName: string;
   geometry: GeoJsonGeometry;
   /** 지도 라벨·이동용 중심좌표 */
-  center: LatLng;
+  center: LatLng | null;
 }
 
 /** GET /api/geo/trdars?guCode= */
@@ -73,7 +73,7 @@ export interface TrdarGeo {
   /** 상권 구분명 (골목상권 / 발달상권 / 전통시장 / 관광특구) */
   trdarTypeName: string;
   geometry: GeoJsonGeometry;
-  center: LatLng;
+  center: LatLng | null;
 }
 
 // ─────────────────────────────────────────────
