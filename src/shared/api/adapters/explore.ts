@@ -1,5 +1,5 @@
 import type { ExploreMetricValueDto, ExploreOverviewResponseDto } from '../dto/explore';
-import type { SeoulMapResponse, MetricValue } from '@/shared/types';
+import type { SeoulMapResponse, MetricValue, DistrictMapResponse } from '@/shared/types';
 import { toQuarter } from '../convert';
 
 function toMetricValue(m: ExploreMetricValueDto): MetricValue {
@@ -31,6 +31,32 @@ export function toSeoulMap(dto: ExploreOverviewResponseDto): SeoulMapResponse {
     districtRanking: dto.items.map((item) => ({
       guCode: item.area.code,
       guName: item.area.name,
+      sales: toMetricValue(item.sales),
+      storeCount: toMetricValue(item.store_count),
+      flowPopulation: toMetricValue(item.floating_population),
+      residentPopulation: toMetricValue(item.resident_population),
+    }))
+  };
+}
+
+export function toDistrictMap(dto: ExploreOverviewResponseDto, guName: string): DistrictMapResponse {
+  if (!dto.meta.period) throw new Error('explore 응답에 기준 분기(meta.period)가 없습니다');
+  if (!dto.selection.parent_code) throw new Error('explore 응답에 자치구 코드(selection.parent_code)가 없습니다');
+    
+  const industryCode = dto.selection.industry_code;
+
+  return {
+    quarter: toQuarter(dto.meta.period),
+    guCode: dto.selection.parent_code,
+    guName: guName,
+    dongCount: dto.total,
+    category: {
+      code: industryCode,
+      name: industryCode === null ? '전체 업종' : industryCode,
+    },
+    dongRanking: dto.items.map((item) => ({
+      dongCode: item.area.code,
+      dongName: item.area.name,
       sales: toMetricValue(item.sales),
       storeCount: toMetricValue(item.store_count),
       flowPopulation: toMetricValue(item.floating_population),

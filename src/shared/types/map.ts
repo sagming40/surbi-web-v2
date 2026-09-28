@@ -46,7 +46,7 @@ export interface DongGeo {
   dongName: string;
   geometry: GeoJsonGeometry;
   /** 지도 라벨·이동용 중심좌표 */
-  center: LatLng;
+  center: LatLng | null;
 }
 
 /** GET /api/geo/trdars?guCode= */

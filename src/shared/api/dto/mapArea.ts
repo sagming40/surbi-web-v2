@@ -10,6 +10,7 @@ export interface MapAreaPropertiesDto {
   category_name: string | null;
   signgu_code: string | null;
   dong_code: string | null;
+  center: { latitude: number | null; longitude: number | null; available: boolean };
 }
 
 /** 영역 하나. geometry는 GeoJSON 표준이라 프론트 타입을 그대로 쓴다 */
@@ -24,3 +25,4 @@ export interface MapAreaFeatureCollectionDto {
   type: 'FeatureCollection';
   features: MapAreaFeatureDto[];
 }
+
