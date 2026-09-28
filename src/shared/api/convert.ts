@@ -31,3 +31,11 @@ const METRIC_KEY: Record<MetricCodeDto, RankingMetricKey> = {
 export function toMetricKey(code: MetricCodeDto): RankingMetricKey {
   return METRIC_KEY[code];
 }
+
+export function calcChangeRate(current: number | null, previous: number | null): number | null {
+  if (current === null || previous === null || previous === 0)
+    return null;
+  
+  const rate = (current - previous) / previous * 100;
+  return Math.round(rate * 10000) / 10000; // 소수점 4자리까지 반올림
+}

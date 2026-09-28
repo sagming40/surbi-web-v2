@@ -10,13 +10,13 @@ export default defineConfig({
       '@': path.resolve(import.meta.dirname, './src'),
     },
   },
-  server: {
+  server: {       // 로컬 개발용
     port: 5000,
     proxy: {
       '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true
       }
-    }
+    } 
   },
 })
